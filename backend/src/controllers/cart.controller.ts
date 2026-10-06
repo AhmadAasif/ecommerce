@@ -216,7 +216,7 @@ export const addToCart = async (req: Request, res: Response) => {
 
 export const getCart = async (req: Request, res: Response) => {
   try {
-    const { cartId } = req.params;
+    const cartId = getRouteParam(req.params.cartId);
 
     if (!isValidUuid(cartId)) {
       res.status(400).json({ success: false, message: "Invalid cart ID" });
@@ -364,7 +364,8 @@ export const updateCartItem = async (req: Request, res: Response) => {
 
 export const removeCartItem = async (req: Request, res: Response) => {
   try {
-    const { cartId, itemId } = req.params;
+    const cartId = getRouteParam(req.params.cartId);
+    const itemId = getRouteParam(req.params.itemId);
 
     if (!isValidUuid(cartId)) {
       res.status(400).json({ success: false, message: "Invalid cart ID" });
@@ -406,7 +407,7 @@ export const removeCartItem = async (req: Request, res: Response) => {
 
 export const clearCart = async (req: Request, res: Response) => {
   try {
-    const { cartId } = req.params;
+    const cartId = getRouteParam(req.params.cartId);
 
     if (!isValidUuid(cartId)) {
       res.status(400).json({ success: false, message: "Invalid cart ID" });
