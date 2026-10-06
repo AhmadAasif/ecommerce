@@ -13,6 +13,7 @@ import adminImageRoutes from "./routes/admin-image.routes.js";
 import cartRoutes from "./routes/cart.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
+import adminOrderRoutes from "./routes/admin-order.routes.js";
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ app.use("/api/admin", adminImageRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/admin", adminOrderRoutes);
 
 app.get("/api/health", async (_req, res) => {
   try {
