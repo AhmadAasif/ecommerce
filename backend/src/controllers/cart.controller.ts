@@ -132,6 +132,27 @@ export const addToCart = async (req: Request, res: Response) => {
       return;
     }
 
+    // Active reservations are temporarily unavailable to other customers.
+    await pool.query(
+      `UPDATE order_inventory_reservations
+       SET status = 'released', released_at = CURRENT_TIMESTAMP
+       WHERE status = 'reserved' AND expires_at <= CURRENT_TIMESTAMP`
+    );
+
+    const reservedResult = await pool.query(
+      `SELECT COALESCE(SUM(quantity), 0) AS reserved_quantity
+       FROM order_inventory_reservations
+       WHERE variant_id = $1 AND status = 'reserved'`,
+      [variantId]
+    );
+
+    const reservedQuantity = Number(
+      reservedResult.rows[0].reserved_quantity
+    );
+
+    const availableStock =
+      Number(variant.stock_quantity) - reservedQuantity;
+
     const existing = await pool.query(
       `SELECT id, quantity
        FROM cart_items
@@ -145,11 +166,11 @@ export const addToCart = async (req: Request, res: Response) => {
 
     const newQuantity = existingQuantity + requestedQuantity;
 
-    if (newQuantity > Number(variant.stock_quantity)) {
+    if (newQuantity > availableStock) {
       res.status(400).json({
         success: false,
-        message: `Only ${variant.stock_quantity} items available in stock`,
-        availableStock: Number(variant.stock_quantity),
+        message: `Only ${availableStock} items available in stock`,
+        availableStock,
         requestedQuantity: newQuantity
       });
       return;
@@ -286,17 +307,26 @@ export const updateCartItem = async (req: Request, res: Response) => {
       return;
     }
 
+    await pool.query(
+      `UPDATE order_inventory_reservations
+       SET status = 'released', released_at = CURRENT_TIMESTAMP
+       WHERE status = 'reserved' AND expires_at <= CURRENT_TIMESTAMP`
+    );
+
     const result = await pool.query(
       `UPDATE cart_items ci
        SET quantity = $1, updated_at = CURRENT_TIMESTAMP
        FROM product_variants pv
-       JOIN products p ON p.id = pv.product_id
        WHERE ci.id = $2
          AND ci.cart_id = $3
          AND ci.variant_id = pv.id
          AND pv.status = 'active'
-         AND p.status = 'active'
-         AND pv.stock_quantity >= $1
+         AND pv.stock_quantity - (
+           SELECT COALESCE(SUM(r.quantity), 0)
+           FROM order_inventory_reservations r
+           WHERE r.variant_id = pv.id
+             AND r.status = 'reserved'
+         ) >= $1
        RETURNING ci.id, ci.product_id, ci.variant_id, ci.quantity`,
       [requestedQuantity, itemId, cartId]
     );
