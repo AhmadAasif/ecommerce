@@ -244,3 +244,92 @@ export const createOrder = async (req: Request, res: Response) => {
     client.release();
   }
 };
+
+export const trackOrder = async (req: Request, res: Response) => {
+  try {
+    const { orderNumber, email } = req.body;
+
+    const normalizedOrderNumber =
+      typeof orderNumber === "string" ? orderNumber.trim() : "";
+    const normalizedEmail =
+      typeof email === "string" ? email.trim().toLowerCase() : "";
+
+    if (!normalizedOrderNumber || !normalizedEmail) {
+      res.status(400).json({
+        success: false,
+        message: "Order number and email are required"
+      });
+      return;
+    }
+
+    const orderResult = await pool.query(
+      `SELECT
+         id,
+         order_number,
+         customer_name,
+         subtotal,
+         shipping_fee,
+         discount_amount,
+         total_amount,
+         payment_status,
+         order_status,
+         created_at,
+         updated_at
+       FROM orders
+       WHERE order_number = $1
+         AND LOWER(customer_email) = $2`,
+      [normalizedOrderNumber, normalizedEmail]
+    );
+
+    if (!orderResult.rows.length) {
+      res.status(404).json({
+        success: false,
+        message: "Order not found or verification details do not match"
+      });
+      return;
+    }
+
+    const order = orderResult.rows[0];
+
+    const itemsResult = await pool.query(
+      `SELECT
+         product_name,
+         sku,
+         size,
+         color,
+         quantity,
+         unit_price,
+         total_price
+       FROM order_items
+       WHERE order_id = $1
+       ORDER BY id ASC`,
+      [order.id]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        order: {
+          orderNumber: order.order_number,
+          customerName: order.customer_name,
+          subtotal: order.subtotal,
+          shippingFee: order.shipping_fee,
+          discountAmount: order.discount_amount,
+          totalAmount: order.total_amount,
+          paymentStatus: order.payment_status,
+          orderStatus: order.order_status,
+          createdAt: order.created_at,
+          updatedAt: order.updated_at,
+          items: itemsResult.rows
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Track order error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to track order"
+    });
+  }
+};
