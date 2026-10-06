@@ -38,6 +38,14 @@ export const getRazorpayPublicKey = () => keyId;
 
 export const getRazorpayCurrency = () => currency;
 
+export const fetchRazorpayOrder = async (orderId: string) => {
+  return razorpay.orders.fetch(orderId);
+};
+
+export const fetchRazorpayPayment = async (paymentId: string) => {
+  return razorpay.payments.fetch(paymentId);
+};
+
 export const verifyRazorpayPaymentSignature = ({
   orderId,
   paymentId,
