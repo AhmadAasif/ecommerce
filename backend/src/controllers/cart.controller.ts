@@ -294,7 +294,8 @@ export const getCart = async (req: Request, res: Response) => {
 
 export const updateCartItem = async (req: Request, res: Response) => {
   try {
-    const cartId = getRouteParam(req.params.cartId);\n    const itemId = getRouteParam(req.params.itemId);
+    const cartId = getRouteParam(req.params.cartId);
+    const itemId = getRouteParam(req.params.itemId);
     const requestedQuantity = Number(req.body.quantity);
 
     if (!isValidUuid(cartId)) {
