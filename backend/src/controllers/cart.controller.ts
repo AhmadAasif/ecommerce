@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import pool from "../config/database.js";
 
+const getRouteParam = (value: string | string[] | undefined): string =>
+  Array.isArray(value) ? value[0] ?? "" : value ?? "";
+
 const isValidUuid = (value: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
@@ -59,7 +62,7 @@ export const createCart = async (req: Request, res: Response) => {
 
 export const addToCart = async (req: Request, res: Response) => {
   try {
-    const { cartId } = req.params;
+    const cartId = getRouteParam(req.params.cartId);
     const { productId, variantId, quantity } = req.body;
 
     if (!isValidUuid(cartId)) {
@@ -291,7 +294,7 @@ export const getCart = async (req: Request, res: Response) => {
 
 export const updateCartItem = async (req: Request, res: Response) => {
   try {
-    const { cartId, itemId } = req.params;
+    const cartId = getRouteParam(req.params.cartId);\n    const itemId = getRouteParam(req.params.itemId);
     const requestedQuantity = Number(req.body.quantity);
 
     if (!isValidUuid(cartId)) {
