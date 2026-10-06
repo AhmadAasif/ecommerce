@@ -1,7 +1,10 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import helmet from "helmet";
 import pool from "./config/database.js";
+import { requestRateLimit, cleanupRateLimitStore } from "./middleware/security.middleware.js";
+import { errorHandler, notFoundHandler } from "./middleware/error.middleware.js";
 
 import categoryRoutes from "./routes/category.routes.js";
 import productRoutes from "./routes/product.routes.js";
@@ -19,11 +22,32 @@ import adminInventoryRoutes from "./routes/admin-inventory.routes.js";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 
-app.use(cors());
+app.set("trust proxy", 1);
+app.disable("x-powered-by");
+
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:3000")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(helmet());
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error("Origin is not allowed by CORS"));
+    }
+  })
+);
+app.use(requestRateLimit);
 app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 app.use("/api/categories", categoryRoutes);
 app.use("/api/products", productRoutes);
@@ -38,7 +62,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminOrderRoutes);
 app.use("/api/admin", adminInventoryRoutes);
 
-app.get("/api/health", async (_req, res) => {
+app.get("/api/health", async (_req, res, next) => {
   try {
     const result = await pool.query("SELECT NOW()");
     res.json({
@@ -48,14 +72,27 @@ app.get("/api/health", async (_req, res) => {
       databaseTime: result.rows[0].now
     });
   } catch (error) {
-    console.error("Database connection error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Database connection failed"
-    });
+    next(error);
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend running on http://localhost:${PORT}`);
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+const cleanupTimer = setInterval(cleanupRateLimitStore, 5 * 60 * 1000);
+cleanupTimer.unref();
+
+const server = app.listen(PORT, () => {
+  console.log(`Backend running on port ${PORT}`);
 });
+
+const shutdown = async (signal: string) => {
+  console.log(`${signal} received. Shutting down gracefully...`);
+  server.close(async () => {
+    await pool.end();
+    process.exit(0);
+  });
+};
+
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
+process.on("SIGINT", () => void shutdown("SIGINT"));
