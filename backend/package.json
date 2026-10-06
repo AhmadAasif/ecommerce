@@ -18,7 +18,9 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "pg": "^8.16.3",
-    "razorpay": "^2.9.8"
+    "razorpay": "^2.9.8",
+    "helmet": "^8.1.0",
+    "express-rate-limit": "^8.2.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
