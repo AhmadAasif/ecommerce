@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import Razorpay from "razorpay";
 import dotenv from "dotenv";
 
@@ -36,3 +37,52 @@ export const createRazorpayOrder = async ({
 export const getRazorpayPublicKey = () => keyId;
 
 export const getRazorpayCurrency = () => currency;
+
+export const verifyRazorpayPaymentSignature = ({
+  orderId,
+  paymentId,
+  signature
+}: {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+}) => {
+  const generatedSignature = crypto
+    .createHmac("sha256", keySecret)
+    .update(`${orderId}|${paymentId}`)
+    .digest("hex");
+
+  const expected = Buffer.from(generatedSignature, "utf8");
+  const received = Buffer.from(signature, "utf8");
+
+  if (expected.length !== received.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(expected, received);
+};
+
+export const verifyRazorpayWebhookSignature = (
+  rawBody: Buffer,
+  signature: string
+) => {
+  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+
+  if (!webhookSecret) {
+    throw new Error("RAZORPAY_WEBHOOK_SECRET is required");
+  }
+
+  const generatedSignature = crypto
+    .createHmac("sha256", webhookSecret)
+    .update(rawBody)
+    .digest("hex");
+
+  const expected = Buffer.from(generatedSignature, "utf8");
+  const received = Buffer.from(signature, "utf8");
+
+  if (expected.length !== received.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(expected, received);
+};
