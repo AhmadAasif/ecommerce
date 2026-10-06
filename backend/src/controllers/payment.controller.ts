@@ -5,6 +5,8 @@ import {
   createRazorpayOrder,
   getRazorpayCurrency,
   getRazorpayPublicKey,
+  fetchRazorpayOrder,
+  fetchRazorpayPayment,
   verifyRazorpayPaymentSignature,
   verifyRazorpayWebhookSignature
 } from "../services/payment.service.js";
@@ -299,6 +301,26 @@ export const verifyPayment = async (req: Request, res: Response) => {
       return;
     }
 
+    const razorpayOrder = await fetchRazorpayOrder(razorpayOrderId);
+    const razorpayPayment = await fetchRazorpayPayment(razorpayPaymentId);
+    const expectedAmount = Math.round(Number(order.total_amount) * 100);
+
+    if (
+      razorpayOrder.id !== razorpayOrderId ||
+      Number(razorpayOrder.amount) !== expectedAmount ||
+      razorpayOrder.currency !== getRazorpayCurrency() ||
+      razorpayPayment.order_id !== razorpayOrderId ||
+      Number(razorpayPayment.amount) !== expectedAmount ||
+      razorpayPayment.status !== "captured"
+    ) {
+      await client.query("ROLLBACK");
+      res.status(409).json({
+        success: false,
+        message: "Razorpay payment does not match the order"
+      });
+      return;
+    }
+
     const reservationResult = await client.query(
       `SELECT
          id,
@@ -496,6 +518,22 @@ export const handlePaymentWebhook = async (req: Request, res: Response) => {
           res.status(400).json({
             success: false,
             message: "Payment order mismatch"
+          });
+          return;
+        }
+
+        const expectedAmount = Math.round(Number(order.total_amount) * 100);
+
+        if (
+          Number(payment.amount) !== expectedAmount ||
+          payment.currency !== getRazorpayCurrency() ||
+          payment.order_id !== order.payment_order_id ||
+          payment.status !== "captured"
+        ) {
+          await client.query("ROLLBACK");
+          res.status(409).json({
+            success: false,
+            message: "Webhook payment does not match the order"
           });
           return;
         }
