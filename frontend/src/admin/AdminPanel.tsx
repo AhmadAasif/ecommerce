@@ -49,4 +49,4 @@ export default function AdminPanel(){
 
 function Stat({label,value,note}:{label:string;value:string|number;note:string}){return <div className="admin-stat"><small>{label}</small><strong>{value}</strong><span>{note}</span></div>}
 function Panel({title,children}:{title:string;children:React.ReactNode}){return <div className="admin-card"><div className="admin-card-head"><small>{title}</small></div>{children}</div>}
-function Table({children}:{children:React.ReactNode}){return <div className="admin-table-card">{children}</div}
+function Table({children}:{children:React.ReactNode}){return <div className="admin-table-card">{children}</div>}
