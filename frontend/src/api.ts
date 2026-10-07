@@ -21,6 +21,11 @@ export type Product = {
   }[];
 };
 
+export type AdminProduct = Product & { category_id?: number | null; created_at?: string; updated_at?: string };
+export type AdminCategory = { id: number; name: string; description?: string | null; image_url?: string | null; created_at?: string };
+export type InventoryItem = { variant_id: number; product_id: number; product_name: string; sku: string; size?: string | null; color?: string | null; stock_quantity: number; available_stock: number; status: string };
+export type AdminOrder = { id: number; order_number: string; customer_name: string; customer_email: string; customer_phone: string; subtotal: number | string; shipping_fee: number | string; discount_amount: number | string; total_amount: number | string; payment_status: string; order_status: string; created_at?: string; updated_at?: string; item_count?: number };
+
 export const demoProducts: Product[] = [
   ["Tailored Oxford Shirt",2299,5,"Men","White / Blue","https://kemptwear.com/cdn/shop/files/White_Ox_ghost_01_800x.jpg?v=1754654545"],
   ["Linen Overshirt",3199,10,"Men","Beige / Olive","https://www.havhokeren.dk/cdn/shop/files/2541454735-804_1-Photoroom.jpg?v=1747663675"],
