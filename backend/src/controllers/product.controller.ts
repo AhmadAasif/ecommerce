@@ -7,7 +7,8 @@ export const getProducts = async (req: Request, res: Response) => {
     const brand = typeof req.query.brand === "string" ? req.query.brand.trim() : "";
     const size = typeof req.query.size === "string" ? req.query.size.trim() : "";
     const color = typeof req.query.color === "string" ? req.query.color.trim() : "";
-    const category = Number(req.query.category);
+    const categoryRaw = typeof req.query.category === "string" ? req.query.category.trim() : "";
+    const category = Number(categoryRaw);
     const minPrice = Number(req.query.minPrice);
     const maxPrice = Number(req.query.maxPrice);
     const page = Math.max(1, Number(req.query.page) || 1);
@@ -32,7 +33,10 @@ export const getProducts = async (req: Request, res: Response) => {
 
     if (Number.isInteger(category) && category > 0) {
       values.push(category);
-      conditions.push(`p.category_id = $${values.length}`);
+      conditions.push(`p.category_id = ${values.length}`);
+    } else if (categoryRaw) {
+      values.push(categoryRaw);
+      conditions.push(`LOWER(c.name) = LOWER(${values.length})`);
     }
 
     if (Number.isFinite(minPrice) && minPrice >= 0) {
@@ -126,7 +130,7 @@ export const getProducts = async (req: Request, res: Response) => {
         hasNextPage: page * limit < total,
         hasPreviousPage: page > 1
       },
-      filters: { search, category: Number.isInteger(category) && category > 0 ? category : null, brand, size, color, minPrice: Number.isFinite(minPrice) ? minPrice : null, maxPrice: Number.isFinite(maxPrice) ? maxPrice : null, inStock: req.query.inStock === "true", sort }
+      filters: { search, category: categoryRaw || null, brand, size, color, minPrice: Number.isFinite(minPrice) ? minPrice : null, maxPrice: Number.isFinite(maxPrice) ? maxPrice : null, inStock: req.query.inStock === "true", sort }
     });
   } catch (error) {
     console.error("Error fetching products:", error);
