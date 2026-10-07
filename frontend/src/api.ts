@@ -45,6 +45,7 @@ export const demoProducts: Product[] = [
   discount: Number(discount),
   brand: "ELEGANCE DEMO",
   status: "active",
+  category_name: String(category),
   images: [{id: 90000+i, image_url: String(image), is_primary: true}],
   variants: String(colors).split(" / ").flatMap((color,ci) =>
     ["S","M","L","XL","XXL"].map((size,si)=>({
@@ -87,7 +88,7 @@ export const api = {
       let data=[...demoProducts];
       const search=(p.get("search")||"").toLowerCase(), cat=p.get("category")||"", sort=p.get("sort")||"newest";
       if(search) data=data.filter(x=>x.name.toLowerCase().includes(search)||x.description?.toLowerCase().includes(search));
-      if(cat) data=data.filter(x=>x.category_name?.toLowerCase()===cat.toLowerCase());
+      if(cat) data=data.filter(x=>String(x.category_name||"").trim().toLowerCase()===cat.trim().toLowerCase());
       if(sort==="price_low") data.sort((a,b)=>Number(a.price)-Number(b.price));
       if(sort==="price_high") data.sort((a,b)=>Number(b.price)-Number(a.price));
       if(sort==="name") data.sort((a,b)=>a.name.localeCompare(b.name));
