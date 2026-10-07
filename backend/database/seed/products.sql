@@ -3,8 +3,8 @@ VALUES
 ('Men','Men clothing'),('Women','Women clothing'),('New Arrivals','Latest products'),('Sale','Discounted products')
 ON CONFLICT (name) DO NOTHING;
 
-INSERT INTO products (name,description,price,discount,category_id,brand,status)
-SELECT v.name,v.description,v.price,v.discount,c.id,'Client Brand','active'
+INSERT INTO products (name,description,price,discount,category_id,brand,status,gender)
+SELECT v.name,v.description,v.price,v.discount,c.id,'Client Brand','active',LOWER(v.category)
 FROM (VALUES
 ('Classic Denim Jacket','Classic denim jacket',2999,10,'Men'),
 ('Oversized Cotton T-Shirt','Comfortable cotton t-shirt',1499,0,'Men'),
@@ -28,8 +28,8 @@ ON CONFLICT (product_id) DO NOTHING;
 -- Classy test catalogue: 10 additional products with variants and images.
 -- Safe to run again: product names and SKUs are unique.
 
-INSERT INTO products (name, description, price, discount, category_id, brand, status)
-SELECT v.name, v.description, v.price, v.discount, c.id, 'Client Brand', 'active'
+INSERT INTO products (name, description, price, discount, category_id, brand, status, gender)
+SELECT v.name, v.description, v.price, v.discount, c.id, 'Client Brand', 'active', LOWER(v.category)
 FROM (VALUES
   ('Tailored Oxford Shirt', 'A refined cotton Oxford shirt with a clean tailored silhouette.', 2299, 5, 'Men'),
   ('Linen Overshirt', 'Lightweight linen-blend overshirt designed for effortless layering.', 3199, 10, 'Men'),
