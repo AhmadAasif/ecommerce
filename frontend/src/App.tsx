@@ -2,6 +2,7 @@ import {useEffect,useState} from "react";
 import type {FormEvent} from "react";
 import {Link,Route,Routes,useNavigate,useParams,useSearchParams} from "react-router-dom";
 import {api,Product} from "./api";
+import AdminPanel from "./admin/AdminPanel";
 
 const money=(v:number|string)=>`₹${Number(v||0).toLocaleString("en-IN")}`;
 const Icon=({type}:{type:"search"|"bag"|"user"|"arrow"})=>{
@@ -14,7 +15,7 @@ const Icon=({type}:{type:"search"|"bag"|"user"|"arrow"})=>{
 
 function Header({count}:{count:number}){
  const [q,setQ]=useState("");const nav=useNavigate();
- return <header className="site-header"><div className="container header-main"><Link to="/" className="brand">DEMONSTATION</Link><div className="header-tools"><form className="search" onSubmit={e=>{e.preventDefault();if(q.trim())nav(`/products?search=${encodeURIComponent(q)}`)}}><Icon type="search"/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="SEARCH"/></form><Link to="/admin" className="tool"><Icon type="user"/><span>ACCOUNT</span></Link><Link to="/cart" className="tool"><Icon type="bag"/><span>BAG ({count})</span></Link></div></div><nav className="container ribbon"><Link to="/products">COLLECTIONS</Link><Link to="/products?category=Men">MEN</Link><Link to="/products?category=Women">WOMEN</Link><Link to="/products?sort=newest">NEW ARRIVALS</Link><Link to="/products?sort=discount">SALE</Link><Link to="/track">ORDER TRACKING</Link></nav></header>;
+ return <header className="site-header"><div className="container header-main"><Link to="/" className="brand">DEMONSTATION</Link><div className="header-tools"><form className="search" onSubmit={e=>{e.preventDefault();if(q.trim())nav(`/products?search=${encodeURIComponent(q)}`)}}><Icon type="search"/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="SEARCH"/></form><Link to="/cart" className="tool"><Icon type="bag"/><span>BAG ({count})</span></Link></div></div><nav className="container ribbon"><Link to="/products">COLLECTIONS</Link><Link to="/products?category=Men">MEN</Link><Link to="/products?category=Women">WOMEN</Link><Link to="/products?sort=newest">NEW ARRIVALS</Link><Link to="/products?sort=discount">SALE</Link><Link to="/track">ORDER TRACKING</Link></nav></header>;
 }
 
 function Card({p,index}:{p:Product,index:number}){
@@ -134,11 +135,7 @@ function Checkout(){
 
 function Track(){const [n,setN]=useState(""),[e,setE]=useState(""),[r,setR]=useState<any>(),[err,setErr]=useState("");return <main className="container section narrow"><small>CLIENT SERVICE / ORDER STATUS</small><h1>TRACK ORDER</h1><form className="form" onSubmit={async x=>{x.preventDefault();try{setErr("");setR((await api.trackOrder(n,e)).data)}catch(z){setR(null);setErr(z instanceof Error?z.message:"Order not found")}}}><label>ORDER NUMBER<input required value={n} onChange={x=>setN(x.target.value)}/></label><label>EMAIL<input required type="email" value={e} onChange={x=>setE(x.target.value)}/></label><button className="add">TRACK ORDER <Icon type="arrow"/></button></form>{err&&<p className="error">{err}</p>}{r&&<pre>{JSON.stringify(r,null,2)}</pre>}</main>}
 
-function Admin(){const [token,setToken]=useState(localStorage.getItem("adminToken")||""),[email,setEmail]=useState("admin@example.com"),[password,setPassword]=useState("Admin@12345"),[tab,setTab]=useState("products"),[data,setData]=useState<any[]>([]),[error,setError]=useState("");
- useEffect(()=>{if(!token)return;const req=tab==="products"?api.adminProducts(token):tab==="orders"?api.adminOrders(token):api.adminInventory(token);void req.then(r=>setData(r.data||[])).catch(e=>setError(e.message))},[token,tab]);
- if(!token)return <main className="container section narrow"><small>PRIVATE / ADMIN</small><h1>STORE ADMIN</h1><form className="form" onSubmit={async e=>{e.preventDefault();try{const r=await api.adminLogin(email,password);localStorage.setItem("adminToken",r.data.token);setToken(r.data.token)}catch(x){setError(x instanceof Error?x.message:"Login failed")}}}><label>EMAIL<input value={email} onChange={e=>setEmail(e.target.value)}/></label><label>PASSWORD<input type="password" value={password} onChange={e=>setPassword(e.target.value)}/></label><button className="add">LOGIN</button></form>{error&&<p className="error">{error}</p>}</main>;
- return <main className="container section"><div className="section-head"><div><small>PRIVATE / ADMIN PANEL</small><h1>CONTROL ROOM</h1></div><button onClick={()=>{localStorage.removeItem("adminToken");setToken("")}}>LOGOUT</button></div><div className="admin-tabs">{["products","orders","inventory"].map(x=><button className={tab===x?"active":""} key={x} onClick={()=>setTab(x)}>{x.toUpperCase()}</button>)}</div>{error&&<p className="error">{error}</p>}<pre>{JSON.stringify(data,null,2)}</pre></main>;
-}
+function Admin(){return <AdminPanel/>;}
 
 function Footer(){return <footer><div className="container footer-grid"><div><span className="brand">DEMONSTATION</span><p>Contemporary essentials. Designed with restraint.</p></div><div><small>SHOP</small><Link to="/products">Collection</Link><Link to="/track">Track Order</Link></div><div><small>SERVICE</small><span>Shipping & Delivery</span><span>Returns</span><span>Client Care</span></div></div><div className="container copyright">© {new Date().getFullYear()} DEMONSTATION / E-COMMERCE</div></footer>}
 
