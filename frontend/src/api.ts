@@ -9,6 +9,7 @@ export type Product = {
   brand?: string;
   status?: string;
   category_name?: string;
+  gender?: "men" | "women" | string;
   images?: { id: number; image_url: string; is_primary: boolean }[];
   variants?: {
     id: number;
@@ -45,6 +46,7 @@ export const demoProducts: Product[] = [
   discount: Number(discount),
   brand: "ELEGANCE DEMO",
   status: "active",
+  gender: String(category).toLowerCase(),
   category_name: String(category),
   images: [{id: 90000+i, image_url: String(image), is_primary: true}],
   variants: String(colors).split(" / ").flatMap((color,ci) =>
@@ -88,7 +90,7 @@ export const api = {
       let data=[...demoProducts];
       const search=(p.get("search")||"").toLowerCase(), cat=p.get("category")||"", sort=p.get("sort")||"newest";
       if(search) data=data.filter(x=>x.name.toLowerCase().includes(search)||x.description?.toLowerCase().includes(search));
-      if(cat) data=data.filter(x=>String(x.category_name||"").trim().toLowerCase()===cat.trim().toLowerCase());
+      if(cat) data=data.filter(x=>String(x.gender||"").trim().toLowerCase()===cat.trim().toLowerCase() || String(x.category_name||"").trim().toLowerCase()===cat.trim().toLowerCase());
       if(sort==="price_low") data.sort((a,b)=>Number(a.price)-Number(b.price));
       if(sort==="price_high") data.sort((a,b)=>Number(b.price)-Number(a.price));
       if(sort==="name") data.sort((a,b)=>a.name.localeCompare(b.name));
