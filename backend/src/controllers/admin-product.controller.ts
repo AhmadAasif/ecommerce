@@ -43,3 +43,31 @@ export const deleteProduct = async (req: Request, res: Response) => {
     res.json({success:true,message:"Product deleted successfully",data:result.rows[0]});
   } catch (error) { console.error(error); res.status(500).json({success:false,message:"Failed to delete product"}); }
 };
+
+export const getAdminProducts = async (_req: Request, res: Response) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        p.id, p.name, p.description, p.price, p.discount, p.brand, p.status,
+        p.category_id, c.name AS category_name,
+        COALESCE(json_agg(DISTINCT jsonb_build_object(
+          'id', pi.id, 'image_url', pi.image_url, 'is_primary', pi.is_primary
+        )) FILTER (WHERE pi.id IS NOT NULL), '[]') AS images,
+        COALESCE(json_agg(DISTINCT jsonb_build_object(
+          'id', pv.id, 'product_id', pv.product_id, 'sku', pv.sku,
+          'size', pv.size, 'color', pv.color, 'price', pv.price,
+          'stock_quantity', pv.stock_quantity, 'status', pv.status
+        )) FILTER (WHERE pv.id IS NOT NULL), '[]') AS variants
+      FROM products p
+      LEFT JOIN categories c ON c.id = p.category_id
+      LEFT JOIN product_images pi ON pi.product_id = p.id
+      LEFT JOIN product_variants pv ON pv.product_id = p.id
+      GROUP BY p.id, c.name
+      ORDER BY p.created_at DESC
+    `);
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error("Get admin products error:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch admin products" });
+  }
+};
