@@ -8,6 +8,7 @@ export const getProducts = async (req: Request, res: Response) => {
     const size = typeof req.query.size === "string" ? req.query.size.trim() : "";
     const color = typeof req.query.color === "string" ? req.query.color.trim() : "";
     const categoryRaw = typeof req.query.category === "string" ? req.query.category.trim() : "";
+    const genderRaw = typeof req.query.gender === "string" ? req.query.gender.trim().toLowerCase() : "";
     const category = Number(categoryRaw);
     const minPrice = Number(req.query.minPrice);
     const maxPrice = Number(req.query.maxPrice);
@@ -29,6 +30,11 @@ export const getProducts = async (req: Request, res: Response) => {
           AND (sv.sku ILIKE $1 OR sv.color ILIKE $1 OR sv.size ILIKE $1)
         )
       )`);
+    }
+
+    if (genderRaw === "men" || genderRaw === "women") {
+      values.push(genderRaw);
+      conditions.push(`LOWER(p.gender) = ${values.length}`);
     }
 
     if (Number.isInteger(category) && category > 0) {
@@ -99,7 +105,7 @@ export const getProducts = async (req: Request, res: Response) => {
     const result = await pool.query(
       `SELECT
          p.id, p.name, p.description, p.price, p.discount, p.brand, p.status,
-         p.category_id, c.name AS category_name,
+         p.gender, p.category_id, c.name AS category_name,
          COALESCE(json_agg(DISTINCT jsonb_build_object(
            'id', pi.id, 'imageUrl', pi.image_url, 'isPrimary', pi.is_primary
          )) FILTER (WHERE pi.id IS NOT NULL), '[]') AS images,
@@ -130,7 +136,7 @@ export const getProducts = async (req: Request, res: Response) => {
         hasNextPage: page * limit < total,
         hasPreviousPage: page > 1
       },
-      filters: { search, category: categoryRaw || null, brand, size, color, minPrice: Number.isFinite(minPrice) ? minPrice : null, maxPrice: Number.isFinite(maxPrice) ? maxPrice : null, inStock: req.query.inStock === "true", sort }
+      filters: { search, gender: genderRaw || null, category: categoryRaw || null, brand, size, color, minPrice: Number.isFinite(minPrice) ? minPrice : null, maxPrice: Number.isFinite(maxPrice) ? maxPrice : null, inStock: req.query.inStock === "true", sort }
     });
   } catch (error) {
     console.error("Error fetching products:", error);
@@ -144,7 +150,7 @@ export const getProductById = async (req: Request, res: Response) => {
 
     const productResult = await pool.query(`
       SELECT p.id, p.name, p.description, p.price, p.discount, p.brand, p.status,
-             p.category_id, c.name AS category_name
+             p.gender, p.category_id, c.name AS category_name
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       WHERE p.id = $1 AND p.status = 'active'
