@@ -29,7 +29,7 @@ const demoProducts: Product[] = [
   ["Satin Midi Dress",3999,10,"Women","Ivory / Black","https://www.tigerofsweden.com/dw/image/v2/AARW_PRD/on/demandware.static/-/Sites-sfra-tos-master-catalog/default/dw7b23268e/images/113698_31E_main.jpg?q=100&sfrm=jpg&sh=2000&sm=fit&sw=1500"],
   ["Tailored Wide-Leg Pants",2999,5,"Women","Beige / Black","https://orsay.cdn.csagdev.cz/zoh4eiLi/IMG/31536000/l6vXeeJc9ObMqAmA6EXDKV7Q8V26aTLXvnCe501vPq4/fill/3840/5257/sm/1/aHR0cHM6Ly9vcnNheS5jZG4tYmUuY3NhZ2Rldi5jei9jYXRhbG9nL2l0ZW0tcGljdHVyZXMvMzFiOTMwZTYtNDQ1My00MmU1LWFjMjgtODM3ZGRmNmYyNTY1NWMyYWRlNjBjYmY1YzEwNmU1ZDUwNmU0MTBkNDhiZTEtNzE2NzcyLmpwZw%3D%3D"],
   ["Silk Blend Blouse",2799,0,"Women","Cream / Black","https://shop.mango.com/assets/rcs/pics/static/T7/fotos/S/77056735_02_B.jpg?imdensity=1&imwidth=2048&ts=1725982463900"],
-  ["Structured Midi Skirt",2499,10,"Women","Black / Olive","https://www.gettyimages.com/"],
+  ["Structured Midi Skirt",2499,10,"Women","Black / Olive","https://static.lefties.com/assets/public/cd22/b6ca/7e0e47cbae70/2dcf4beffcbb/01970300800-A6/01970300800-A6.jpg?f=auto&ts=1764833726640&w=800"],
   ["Classic Trench Coat",5499,20,"Women","Beige / Black","https://www.mackintosh.com/cdn/shop/files/WOMENS-FORRESTLM-1153FD-HONEY-OC0961V1-FRONT.jpg?v=1756990240&width=4999"]
 ].map(([name,price,discount,category,colors,image],i) => ({
   id: 9000+i,
