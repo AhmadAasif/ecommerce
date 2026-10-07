@@ -1,4 +1,5 @@
 import {useEffect,useState} from "react";
+import type {FormEvent} from "react";
 import {Link,Route,Routes,useNavigate,useParams,useSearchParams} from "react-router-dom";
 import {api,Product} from "./api";
 
@@ -50,7 +51,7 @@ function Cart(){
 
 function Checkout(){
  const nav=useNavigate();const [f,setF]=useState({customerName:"",customerEmail:"",customerPhone:"",shippingAddress:""});const [error,setError]=useState("");
- const submit=async(e:React.FormEvent)=>{e.preventDefault();try{const cartId=localStorage.getItem("cartId");if(!cartId)throw Error("Your cart is empty.");const r=await api.createOrder({cartId,...f});localStorage.removeItem("cartId");nav("/confirmation",{state:r.data})}catch(x){setError(x instanceof Error?x.message:"Checkout failed")}};
+ const submit=async(e:FormEvent)=>{e.preventDefault();try{const cartId=localStorage.getItem("cartId");if(!cartId)throw Error("Your cart is empty.");const r=await api.createOrder({cartId,...f});localStorage.removeItem("cartId");nav("/confirmation",{state:r.data})}catch(x){setError(x instanceof Error?x.message:"Checkout failed")}};
  return <main className="container section narrow"><small>CHECKOUT / DELIVERY</small><h1>DELIVERY DETAILS</h1><form className="form" onSubmit={submit}>{Object.entries(f).map(([k,v])=><label key={k}>{k.replace("customer","").replace(/([A-Z])/g," $1").toUpperCase()}<input required value={v} onChange={e=>setF({...f,[k]:e.target.value})}/></label>)}<button className="add">CREATE ORDER <Icon type="arrow"/></button></form>{error&&<p className="error">{error}</p>}<p className="muted">Payment integration will be connected after the order flow is verified.</p></main>;
 }
 
