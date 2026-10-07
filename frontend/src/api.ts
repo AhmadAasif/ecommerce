@@ -21,23 +21,23 @@ export type Product = {
 };
 
 const demoProducts: Product[] = [
-  ["Tailored Oxford Shirt",2299,5,"Men","White / Blue","https://images.unsplash.com/photo-1596755389378-c31d21fd1273?auto=format&fit=crop&w=1200&q=80"],
-  ["Linen Overshirt",3199,10,"Men","Beige / Olive","https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1200&q=80"],
-  ["Pleated Formal Trousers",2899,0,"Men","Black / Grey","https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=1200&q=80"],
-  ["Minimalist Blazer",5999,15,"Men","Black / Charcoal","https://images.unsplash.com/photo-1598808503746-f34c53b9323e?auto=format&fit=crop&w=1200&q=80"],
-  ["Textured Knit Polo",2599,5,"Men","Navy / Cream","https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1200&q=80"],
-  ["Satin Midi Dress",3999,10,"Women","Ivory / Black","https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1200&q=80"],
-  ["Tailored Wide-Leg Pants",2999,5,"Women","Beige / Black","https://images.unsplash.com/photo-1506629905607-d9c297d2d4c0?auto=format&fit=crop&w=1200&q=80"],
-  ["Silk Blend Blouse",2799,0,"Women","Cream / Black","https://images.unsplash.com/photo-1485968579580-b6d095142e6e?auto=format&fit=crop&w=1200&q=80"],
-  ["Structured Midi Skirt",2499,10,"Women","Black / Olive","https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=1200&q=80"],
-  ["Classic Trench Coat",5499,20,"Women","Beige / Black","https://images.unsplash.com/photo-1543076447-215ad9ba6923?auto=format&fit=crop&w=1200&q=80"]
+  ["Tailored Oxford Shirt",2299,5,"Men","White / Blue","https://kemptwear.com/cdn/shop/files/White_Ox_ghost_01_800x.jpg?v=1754654545"],
+  ["Linen Overshirt",3199,10,"Men","Beige / Olive","https://www.havhokeren.dk/cdn/shop/files/2541454735-804_1-Photoroom.jpg?v=1747663675"],
+  ["Pleated Formal Trousers",2899,0,"Men","Black / Grey","https://turnbullandasser.com/cdn/shop/files/tro029-ffbw02-c1_1000x.jpg?v=1706136343"],
+  ["Minimalist Blazer",5999,15,"Men","Black / Charcoal","https://i8.amplience.net/i/manor/10004068014_01?fmt=auto&h=920&w=920"],
+  ["Textured Knit Polo",2599,5,"Men","Navy / Cream","https://samsonmensemporium.com/cdn/shop/files/Untitled-design---2025-03-12T164604-405_600x.png?v=1741812397"],
+  ["Satin Midi Dress",3999,10,"Women","Ivory / Black","https://www.tigerofsweden.com/dw/image/v2/AARW_PRD/on/demandware.static/-/Sites-sfra-tos-master-catalog/default/dw7b23268e/images/113698_31E_main.jpg?q=100&sfrm=jpg&sh=2000&sm=fit&sw=1500"],
+  ["Tailored Wide-Leg Pants",2999,5,"Women","Beige / Black","https://orsay.cdn.csagdev.cz/zoh4eiLi/IMG/31536000/l6vXeeJc9ObMqAmA6EXDKV7Q8V26aTLXvnCe501vPq4/fill/3840/5257/sm/1/aHR0cHM6Ly9vcnNheS5jZG4tYmUuY3NhZ2Rldi5jei9jYXRhbG9nL2l0ZW0tcGljdHVyZXMvMzFiOTMwZTYtNDQ1My00MmU1LWFjMjgtODM3ZGRmNmYyNTY1NWMyYWRlNjBjYmY1YzEwNmU1ZDUwNmU0MTBkNDhiZTEtNzE2NzcyLmpwZw%3D%3D"],
+  ["Silk Blend Blouse",2799,0,"Women","Cream / Black","https://shop.mango.com/assets/rcs/pics/static/T7/fotos/S/77056735_02_B.jpg?imdensity=1&imwidth=2048&ts=1725982463900"],
+  ["Structured Midi Skirt",2499,10,"Women","Black / Olive","https://www.gettyimages.com/"],
+  ["Classic Trench Coat",5499,20,"Women","Beige / Black","https://www.mackintosh.com/cdn/shop/files/WOMENS-FORRESTLM-1153FD-HONEY-OC0961V1-FRONT.jpg?v=1756990240&width=4999"]
 ].map(([name,price,discount,category,colors,image],i) => ({
   id: 9000+i,
   name: String(name),
-  description: "A refined demo piece from the current classy test collection.",
+  description: "Classy studio product photography, shown without models for the demo collection.",
   price: Number(price),
   discount: Number(discount),
-  brand: "DEMO COLLECTION",
+  brand: "ELEGANCE DEMO",
   status: "active",
   images: [{id: 90000+i, image_url: String(image), is_primary: true}],
   variants: String(colors).split(" / ").flatMap((color,ci) =>
