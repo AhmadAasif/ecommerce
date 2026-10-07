@@ -36,14 +36,91 @@ function Products(){
 }
 
 function ProductPage({refresh}:{refresh:()=>void}){
- const {id}=useParams();const [p,setP]=useState<Product|null>(null);const [v,setV]=useState<number|null>(null);const [msg,setMsg]=useState("");const [error,setError]=useState("");
- useEffect(()=>{if(id)void api.getProduct(Number(id)).then(r=>{setP(r.data);setV(r.data.variants?.find(x=>Number(x.stock_quantity)>0)?.id??null)}).catch(e=>setError(e.message))},[id]);
- if(error)return <main className="container section"><p className="error">{error}</p></main>;if(!p)return <main className="container section">LOADING...</main>;
- const img=p.images?.find(x=>x.is_primary)?.image_url||p.images?.[0]?.image_url;const selected=p.variants?.find(x=>x.id===v);
- const add=async()=>{try{let c=localStorage.getItem("cartId");if(!c){const created=(await api.createCart()).data; c=String(created.id||""); if(!c)throw Error("Unable to create cart."); localStorage.setItem("cartId",c)}await api.addCartItem(c,p.id,v,1);setMsg("ADDED TO BAG");refresh()}catch(e){setError(e instanceof Error?e.message:"Unable to add to cart")}};
- return <main className="container section detail"><div className="detail-image">{img&&<img src={img} alt={p.name}/>}</div><div className="detail-copy"><small>{p.brand||"COLLECTION"} / PRODUCT {p.id}</small><h1>{p.name}</h1><div className="price">{money(selected?.price??p.price)}</div><p>{p.description||"A considered essential from the current collection."}</p>{p.variants?.length?<><label>SELECT VARIANT</label><div className="variants">{p.variants.map(x=><button disabled={Number(x.stock_quantity)<=0} className={v===x.id?"active":""} key={x.id} onClick={()=>setV(x.id)}>{[x.size,x.color].filter(Boolean).join(" / ")||x.sku}</button>)}</div></>:null}<button className="add" onClick={()=>void add()}>ADD TO BAG <Icon type="arrow"/></button>{msg&&<p className="success">{msg}</p>}{error&&<p className="error">{error}</p>}<div className="notes"><p><b>SHIPPING</b>Delivery calculated at checkout.</p><p><b>RETURNS</b>Subject to store policy.</p></div></div></main>;
-}
+ const {id}=useParams();
+ const [p,setP]=useState<Product|null>(null);
+ const [size,setSize]=useState<string>("");
+ const [color,setColor]=useState<string>("");
+ const [msg,setMsg]=useState("");
+ const [error,setError]=useState("");
 
+ useEffect(()=>{
+   if(id)void api.getProduct(Number(id)).then(r=>{
+     const product=r.data;
+     setP(product);
+     const first=product.variants?.find(x=>Number(x.stock_quantity)>0);
+     setSize(first?.size||"");
+     setColor(first?.color||"");
+   }).catch(e=>setError(e instanceof Error?e.message:"Unable to load product"));
+ },[id]);
+
+ if(error)return <main className="container section"><p className="error">{error}</p></main>;
+ if(!p)return <main className="container section">LOADING...</main>;
+
+ const img=p.images?.find(x=>x.is_primary)?.image_url||p.images?.[0]?.image_url;
+ const variants=p.variants||[];
+ const sizes=[...new Set(variants.map(x=>x.size).filter(Boolean))] as string[];
+ const colors=[...new Set(variants.map(x=>x.color).filter(Boolean))] as string[];
+ const selected=variants.find(x=>
+   (!sizes.length||x.size===size) &&
+   (!colors.length||x.color===color)
+ );
+ const available=selected && Number(selected.stock_quantity)>0;
+
+ const chooseSize=(next:string)=>{
+   setSize(next);
+   const exact=variants.find(x=>x.size===next && (!color||x.color===color) && Number(x.stock_quantity)>0);
+   if(exact&&exact.color)setColor(exact.color);
+ };
+ const chooseColor=(next:string)=>{
+   setColor(next);
+   const exact=variants.find(x=>x.color===next && (!size||x.size===size) && Number(x.stock_quantity)>0);
+   if(exact&&exact.size)setSize(exact.size);
+ };
+
+ const add=async()=>{
+   try{
+     setError("");
+     if(!selected||!available)throw Error("Please select an available size and color.");
+     let c=localStorage.getItem("cartId");
+     if(!c){
+       const created=(await api.createCart()).data;
+       c=String(created.id||"");
+       if(!c)throw Error("Unable to create cart.");
+       localStorage.setItem("cartId",c);
+     }
+     await api.addCartItem(c,p.id,selected.id,1);
+     setMsg("ADDED TO BAG");
+     refresh();
+   }catch(e){
+     setError(e instanceof Error?e.message:"Unable to add to cart");
+   }
+ };
+
+ return <main className="container section detail">
+   <div className="detail-image">{img&&<img src={img} alt={p.name}/>}</div>
+   <div className="detail-copy">
+     <small>{p.brand||"COLLECTION"} / PRODUCT {p.id}</small>
+     <h1>{p.name}</h1>
+     <div className="price">{money(selected?.price??p.price)}</div>
+     <p>{p.description||"A considered essential from the current collection."}</p>
+
+     {sizes.length>0&&<><label>SIZE</label><div className="variants">{sizes.map(s=>{
+       const hasStock=variants.some(x=>x.size===s&&(!color||x.color===color)&&Number(x.stock_quantity)>0);
+       return <button disabled={!hasStock} className={size===s?"active":""} key={s} onClick={()=>chooseSize(s)}>{s}</button>;
+     })}</div></>}
+
+     {colors.length>0&&<><label>COLOR</label><div className="variants">{colors.map(c=>{
+       const hasStock=variants.some(x=>x.color===c&&(!size||x.size===size)&&Number(x.stock_quantity)>0);
+       return <button disabled={!hasStock} className={color===c?"active":""} key={c} onClick={()=>chooseColor(c)}>{c}</button>;
+     })}</div></>}
+
+     <button className="add" disabled={!available} onClick={()=>void add()}>ADD TO BAG <Icon type="arrow"/></button>
+     {msg&&<p className="success">{msg}</p>}
+     {error&&<p className="error">{error}</p>}
+     <div className="notes"><p><b>SHIPPING</b>Delivery calculated at checkout.</p><p><b>RETURNS</b>Subject to store policy.</p></div>
+   </div>
+ </main>;
+}
 function Cart(){
  const [cart,setCart]=useState<any>();useEffect(()=>{const id=localStorage.getItem("cartId");if(id)void api.getCart(id).then(r=>setCart(r.data)).catch(()=>{})},[]);
  const items=cart?.items||[];return <main className="container section narrow"><small>BAG / CURRENT SELECTION</small><h1>YOUR BAG</h1>{!items.length?<div className="empty">YOUR BAG IS EMPTY</div>:<><div className="cart-list">{items.map((x:any)=><div className="cart-row" key={x.id}><div><b>{x.product_name||x.name||`PRODUCT #${x.product_id}`}</b><small>QTY {x.quantity}</small></div><strong>{money(Number(x.unit_price||x.price||0)*x.quantity)}</strong></div>)}</div><div className="cart-total">SUBTOTAL <b>{money(cart?.subtotal||0)}</b><Link className="add" to="/checkout">CHECKOUT <Icon type="arrow"/></Link></div></>}</main>;
