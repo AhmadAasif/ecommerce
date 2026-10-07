@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 export type Product = {
   id: number;
@@ -21,7 +21,7 @@ export type Product = {
   }[];
 };
 
-const demoProducts: Product[] = [
+export const demoProducts: Product[] = [
   ["Tailored Oxford Shirt",2299,5,"Men","White / Blue","https://kemptwear.com/cdn/shop/files/White_Ox_ghost_01_800x.jpg?v=1754654545"],
   ["Linen Overshirt",3199,10,"Men","Beige / Olive","https://www.havhokeren.dk/cdn/shop/files/2541454735-804_1-Photoroom.jpg?v=1747663675"],
   ["Pleated Formal Trousers",2899,0,"Men","Black / Grey","https://turnbullandasser.com/cdn/shop/files/tro029-ffbw02-c1_1000x.jpg?v=1706136343"],
@@ -54,7 +54,7 @@ const demoProducts: Product[] = [
   )
 }));
 
-async function request<T>(path:string, options?:RequestInit):Promise<T>{
+export async function request<T>(path:string, options?:RequestInit):Promise<T>{
   const r=await fetch(API_URL+path,{headers:{"Content-Type":"application/json",...(options?.headers||{})},...options});
   const d=await r.json().catch(()=>({}));
   if(!r.ok) throw new Error(d.message||`Request failed (${r.status})`);
