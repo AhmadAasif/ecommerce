@@ -11,9 +11,11 @@ import {
 } from "../services/payment.service.js";
 
 export const createPaymentOrder = async (req: Request, res: Response) => {
-  const { orderId } = req.body;
+  const { orderId, orderNumber, customerEmail } = req.body;
 
-  if (!orderId || !Number.isInteger(Number(orderId))) {
+  if (!orderId || !Number.isInteger(Number(orderId)) ||
+      typeof orderNumber !== "string" || !orderNumber.trim() ||
+      typeof customerEmail !== "string" || !customerEmail.trim()) {
     res.status(400).json({
       success: false,
       message: "A valid orderId is required"
@@ -41,8 +43,10 @@ export const createPaymentOrder = async (req: Request, res: Response) => {
          o.customer_email
        FROM orders o
        WHERE o.id = $1
+         AND o.order_number = $2
+         AND LOWER(o.customer_email) = LOWER($3)
        LIMIT 1`,
-      [Number(orderId)]
+      [Number(orderId), orderNumber.trim(), customerEmail.trim()]
     );
 
     if (!orderResult.rows.length) {
@@ -483,6 +487,7 @@ export const handlePaymentWebhook = async (req: Request, res: Response) => {
           `SELECT
              id,
              order_number,
+             total_amount,
              payment_status,
              payment_order_id,
              order_status
