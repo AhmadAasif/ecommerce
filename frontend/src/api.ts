@@ -85,7 +85,8 @@ export const api = {
   url: API_URL,
   getProducts: async (q="") => {
     try { return await request<{success:boolean;data:Product[]}>(`/products${q?`?${q}`:""}`); }
-    catch {
+    catch (error) {
+      if (import.meta.env.PROD) throw error;
       const p=new URLSearchParams(q);
       const savedAdminProducts=JSON.parse(localStorage.getItem("demoAdminProducts")||"[]") as Product[];
       const savedById=new Map(savedAdminProducts.map(x=>[x.id,x]));
@@ -111,7 +112,8 @@ export const api = {
   },
   getProduct: async (id:number) => {
     try { return await request<{success:boolean;data:Product}>(`/products/${id}`); }
-    catch {
+    catch (error) {
+      if (import.meta.env.PROD) throw error;
       const savedAdminProducts=JSON.parse(localStorage.getItem("demoAdminProducts")||"[]") as Product[];
       const p=[...savedAdminProducts,...demoProducts].find(x=>x.id===id&&x.status!=="archived");
       if(!p) throw new Error("Product not found");
@@ -119,16 +121,30 @@ export const api = {
     }
   },
   createCart: async () => {
-    try { return await request<{success:boolean;data:any}>("/cart",{method:"POST",body:"{}"}); }
-    catch { return {success:true,data:{id:"demo-cart"}}; }
+    let sessionId = localStorage.getItem("ecommerceSessionId");
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      localStorage.setItem("ecommerceSessionId", sessionId);
+    }
+    try {
+      return await request<{success:boolean;data:any}>("/cart", {
+        method: "POST",
+        body: JSON.stringify({ sessionId })
+      });
+    } catch (error) {
+      if (import.meta.env.PROD) throw error;
+      return {success:true,data:{id:"demo-cart"}};
+    }
   },
   getCart: async (id:string) => {
     try { return await request<{success:boolean;data:any}>(`/cart/${id}`); }
-    catch { return {success:true,data:demoCart()}; }
+    catch (error) {
+      if (import.meta.env.PROD) throw error; return {success:true,data:demoCart()}; }
   },
   addCartItem: async (c:string,p:number,v:number|null,q:number) => {
     try { return await request<{success:boolean;data:any}>(`/cart/${c}/items`,{method:"POST",body:JSON.stringify({productId:p,variantId:v,quantity:q})}); }
-    catch {
+    catch (error) {
+      if (import.meta.env.PROD) throw error;
       const savedAdminProducts=JSON.parse(localStorage.getItem("demoAdminProducts")||"[]") as Product[];
       const product=[...savedAdminProducts,...demoProducts].find(x=>x.id===p);
       const variant=product?.variants?.find(x=>x.id===v) || product?.variants?.[0];
@@ -142,15 +158,18 @@ export const api = {
   },
   updateCartItem: async (c:string,i:number,q:number) => {
     try { return await request<{success:boolean;data:any}>(`/cart/${c}/items/${i}`,{method:"PUT",body:JSON.stringify({quantity:q})}); }
-    catch { const cart=demoCart(); const item=cart.items.find((x:any)=>x.id===i); if(!item) throw new Error("Cart item not found"); item.quantity=q; return {success:true,data:saveDemoCart(cart)}; }
+    catch (error) {
+      if (import.meta.env.PROD) throw error; const cart=demoCart(); const item=cart.items.find((x:any)=>x.id===i); if(!item) throw new Error("Cart item not found"); item.quantity=q; return {success:true,data:saveDemoCart(cart)}; }
   },
   deleteCartItem: async (c:string,i:number) => {
     try { return await request<{success:boolean;data:any}>(`/cart/${c}/items/${i}`,{method:"DELETE"}); }
-    catch { const cart=demoCart(); cart.items=cart.items.filter((x:any)=>x.id!==i); return {success:true,data:saveDemoCart(cart)}; }
+    catch (error) {
+      if (import.meta.env.PROD) throw error; const cart=demoCart(); cart.items=cart.items.filter((x:any)=>x.id!==i); return {success:true,data:saveDemoCart(cart)}; }
   },
   createOrder: async (b:any) => {
     try { return await request<{success:boolean;data:any}>("/orders",{method:"POST",body:JSON.stringify(b)}); }
-    catch {
+    catch (error) {
+      if (import.meta.env.PROD) throw error;
       const cart=demoCart();
       if(!cart.items.length) throw new Error("Your bag is empty.");
       const subtotal=Number(cart.subtotal||0), shippingFee=subtotal>=2000?0:100;
@@ -166,7 +185,8 @@ export const api = {
   },
   trackOrder: async (n:string,e:string) => {
     try { return await request<{success:boolean;data:any}>("/orders/track",{method:"POST",body:JSON.stringify({orderNumber:n,email:e})}); }
-    catch {
+    catch (error) {
+      if (import.meta.env.PROD) throw error;
       const order=JSON.parse(localStorage.getItem(demoOrderKey)||"null");
       if(order&&order.orderNumber===n&&order.email===e) return {success:true,data:order};
       throw new Error("Demo order not found on this device");
