@@ -7,6 +7,14 @@ const generateOrderNumber = () =>
   `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
 export const createOrder = async (req: Request, res: Response) => {
+  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+    res.status(503).json({
+      success: false,
+      message: "Online payments are not configured yet. Please try checkout later."
+    });
+    return;
+  }
+
   const client = await pool.connect();
 
   try {
