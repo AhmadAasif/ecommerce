@@ -15,7 +15,6 @@ import adminVariantRoutes from "./routes/admin-variant.routes.js";
 import adminImageRoutes from "./routes/admin-image.routes.js";
 import cartRoutes from "./routes/cart.routes.js";
 import orderRoutes from "./routes/order.routes.js";
-import paymentRoutes from "./routes/payment.routes.js";
 import adminOrderRoutes from "./routes/admin-order.routes.js";
 import adminInventoryRoutes from "./routes/admin-inventory.routes.js";
 
@@ -64,7 +63,16 @@ app.use("/api/admin", adminVariantRoutes);
 app.use("/api/admin", adminImageRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
-app.use("/api/payments", paymentRoutes);
+
+// Payments are optional during deployment. Do not import their module unless
+// credentials exist, because the payment service validates credentials at load time.
+if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+  const { default: paymentRoutes } = await import("./routes/payment.routes.js");
+  app.use("/api/payments", paymentRoutes);
+} else {
+  console.warn("Payment routes are disabled until Razorpay credentials are configured.");
+}
+
 app.use("/api/admin", adminOrderRoutes);
 app.use("/api/admin", adminInventoryRoutes);
 
