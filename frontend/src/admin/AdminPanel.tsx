@@ -6,7 +6,7 @@ const money=(v:number|string)=>"₹"+Number(v||0).toLocaleString("en-IN");
 type Tab="dashboard"|"products"|"categories"|"inventory"|"orders";
 
 export default function AdminPanel(){
- const [token,setToken]=useState(()=>localStorage.getItem("adminToken")||"");
+ const [token,setToken]=useState(()=>{const saved=localStorage.getItem("adminToken")||"";if(import.meta.env.PROD&&saved==="demo-admin-token"){localStorage.removeItem("adminToken");return "";}return saved;});
  const [email,setEmail]=useState(""),[password,setPassword]=useState("");
  const [tab,setTab]=useState<Tab>("dashboard"),[products,setProducts]=useState<AdminProduct[]>([]),[categories,setCategories]=useState<AdminCategory[]>([]),[inventory,setInventory]=useState<InventoryItem[]>([]),[orders,setOrders]=useState<AdminOrder[]>([]);
  const [selected,setSelected]=useState<AdminProduct|null>(null),[order,setSelectedOrder]=useState<any>(null);
