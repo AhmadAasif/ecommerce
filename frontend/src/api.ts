@@ -129,7 +129,8 @@ export const api = {
   addCartItem: async (c:string,p:number,v:number|null,q:number) => {
     try { return await request<{success:boolean;data:any}>(`/cart/${c}/items`,{method:"POST",body:JSON.stringify({productId:p,variantId:v,quantity:q})}); }
     catch {
-      const product=demoProducts.find(x=>x.id===p);
+      const savedAdminProducts=JSON.parse(localStorage.getItem("demoAdminProducts")||"[]") as Product[];
+      const product=[...savedAdminProducts,...demoProducts].find(x=>x.id===p);
       const variant=product?.variants?.find(x=>x.id===v) || product?.variants?.[0];
       if(!product||!variant) throw new Error("Demo product variant not found");
       const cart=demoCart();
