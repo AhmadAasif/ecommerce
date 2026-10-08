@@ -63,7 +63,11 @@ export const demoProducts: Product[] = [
 }));
 
 export async function request<T>(path:string, options?:RequestInit):Promise<T>{
-  const r=await fetch(API_URL+path,{headers:{"Content-Type":"application/json",...(options?.headers||{})},...options});
+  const headers = new Headers(options?.headers || {});
+  if (!(options?.body instanceof FormData) && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+  const r=await fetch(API_URL+path,{...options,headers});
   const d=await r.json().catch(()=>({}));
   if(!r.ok) throw new Error(d.message||`Request failed (${r.status})`);
   return d;
