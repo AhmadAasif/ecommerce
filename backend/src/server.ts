@@ -77,6 +77,10 @@ app.use("/api/orders", orderRoutes);
 async function startServer() {
   await runMigrations();
 
+  app.get("/api/payments/status", (_req, res) => {
+    res.json({ success: true, data: { enabled: Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) } });
+  });
+
   if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
     const paymentRoutes = (await import("./routes/payment.routes.js")).default;
     app.use("/api/payments", paymentRoutes);
