@@ -64,49 +64,56 @@ app.use("/api/admin", adminImageRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 
-// Payments are optional during deployment. Do not import their module unless
-// credentials exist, because the payment service validates credentials at load time.
-if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
-  const { default: paymentRoutes } = await import("./routes/payment.routes.js");
-  app.use("/api/payments", paymentRoutes);
-} else {
-  console.warn("Payment routes are disabled until Razorpay credentials are configured.");
+async function startServer() {
+  // Payment module remains untouched. Only load it when its credentials exist,
+  // so the rest of the shop can run while payment integration is not configured.
+  if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+    const { default: paymentRoutes } = await import("./routes/payment.routes.js");
+    app.use("/api/payments", paymentRoutes);
+  } else {
+    console.warn("Payment routes are disabled until Razorpay credentials are configured.");
+  }
+
+  app.use("/api/admin", adminOrderRoutes);
+  app.use("/api/admin", adminInventoryRoutes);
+
+  app.get("/api/health", async (_req, res, next) => {
+    try {
+      const result = await pool.query("SELECT NOW()");
+      res.json({
+        success: true,
+        message: "E-commerce backend is running",
+        database: "connected",
+        databaseTime: result.rows[0].now
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.use(notFoundHandler);
+  app.use(errorHandler);
+
+  const cleanupTimer = setInterval(cleanupRateLimitStore, 5 * 60 * 1000);
+  cleanupTimer.unref();
+
+  const server = app.listen(PORT, HOST, () => {
+    console.log(`Backend listening on ${HOST}:${PORT}`);
+  });
+
+  const shutdown = async (signal: string) => {
+    console.log(`${signal} received. Shutting down gracefully...`);
+    server.close(async () => {
+      await pool.end();
+      process.exit(0);
+    });
+  };
+
+  process.on("SIGTERM", () => void shutdown("SIGTERM"));
+  process.on("SIGINT", () => void shutdown("SIGINT"));
 }
 
-app.use("/api/admin", adminOrderRoutes);
-app.use("/api/admin", adminInventoryRoutes);
-
-app.get("/api/health", async (_req, res, next) => {
-  try {
-    const result = await pool.query("SELECT NOW()");
-    res.json({
-      success: true,
-      message: "E-commerce backend is running",
-      database: "connected",
-      databaseTime: result.rows[0].now
-    });
-  } catch (error) {
-    next(error);
-  }
+void startServer().catch((error) => {
+  console.error("Backend startup failed:", error);
+  process.exitCode = 1;
 });
-
-app.use(notFoundHandler);
-app.use(errorHandler);
-
-const cleanupTimer = setInterval(cleanupRateLimitStore, 5 * 60 * 1000);
-cleanupTimer.unref();
-
-const server = app.listen(PORT, HOST, () => {
-  console.log(`Backend listening on ${HOST}:${PORT}`);
-});
-
-const shutdown = async (signal: string) => {
-  console.log(`${signal} received. Shutting down gracefully...`);
-  server.close(async () => {
-    await pool.end();
-    process.exit(0);
-  });
-};
-
-process.on("SIGTERM", () => void shutdown("SIGTERM"));
-process.on("SIGINT", () => void shutdown("SIGINT"));
