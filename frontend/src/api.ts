@@ -151,11 +151,16 @@ export const api = {
   createOrder: async (b:any) => {
     try { return await request<{success:boolean;data:any}>("/orders",{method:"POST",body:JSON.stringify(b)}); }
     catch {
-      const orderNumber=`DEMO-${Date.now().toString().slice(-8)}`;
       const cart=demoCart();
-      const order={orderNumber,email:b.customerEmail,customerName:b.customerName,totalAmount:cart.subtotal,orderStatus:"pending",paymentStatus:"pending",items:cart.items};
+      if(!cart.items.length) throw new Error("Your bag is empty.");
+      const subtotal=Number(cart.subtotal||0), shippingFee=subtotal>=2000?0:100;
+      const orderNumber="DEMO-"+Date.now().toString().slice(-8);
+      const order={id:Date.now(),orderNumber,order_number:orderNumber,email:b.customerEmail,customerEmail:b.customerEmail,customerName:b.customerName,customerPhone:b.customerPhone,shippingAddress:b.shippingAddress,subtotal,shippingFee,shipping_fee:shippingFee,totalAmount:subtotal+shippingFee,total_amount:subtotal+shippingFee,orderStatus:"pending",order_status:"pending",paymentStatus:"pending",payment_status:"pending",createdAt:new Date().toISOString(),created_at:new Date().toISOString(),items:cart.items.map((x:any)=>({...x}))};
+      const orders=JSON.parse(localStorage.getItem("demoOrders")||"[]");
+      localStorage.setItem("demoOrders",JSON.stringify([order,...orders]));
       localStorage.setItem(demoOrderKey,JSON.stringify(order));
       localStorage.removeItem(demoCartKey);
+      localStorage.removeItem("cartId");
       return {success:true,data:order};
     }
   },
