@@ -18,6 +18,7 @@ import cartRoutes from "./routes/cart.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import adminOrderRoutes from "./routes/admin-order.routes.js";
 import adminInventoryRoutes from "./routes/admin-inventory.routes.js";
+import paymentRoutes from "./routes/payment.routes.js";
 
 dotenv.config();
 
@@ -82,7 +83,6 @@ async function startServer() {
   });
 
   if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
-    const paymentRoutes = (await import("./routes/payment.routes.js")).default;
     app.use("/api/payments", paymentRoutes);
     console.log("Razorpay payment routes enabled.");
   } else {
