@@ -192,6 +192,9 @@ export const api = {
       throw new Error("Demo order not found on this device");
     }
   },
+  paymentStatus:()=>request<{success:boolean;data:{enabled:boolean}}>("/payments/status"),
+  createPaymentOrder:(b:any)=>request<any>("/payments/create-order",{method:"POST",body:JSON.stringify(b)}),
+  verifyPayment:(b:any)=>request<any>("/payments/verify",{method:"POST",body:JSON.stringify(b)}),
   adminLogin:(e:string,p:string)=>request<{success:boolean;data:{token:string;admin:any}}>("/auth/admin/login",{method:"POST",body:JSON.stringify({email:e,password:p})}),
   adminProducts:(t:string)=>request<{success:boolean;data:any[]}>("/admin/products",{headers:{Authorization:`Bearer ${t}`}}),
   adminOrders:(t:string)=>request<{success:boolean;data:any[]}>("/admin/orders",{headers:{Authorization:`Bearer ${t}`}}),
