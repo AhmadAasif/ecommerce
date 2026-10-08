@@ -123,26 +123,86 @@ function ProductPage({refresh}:{refresh:()=>void}){
  </main>;
 }
 function Cart(){
- const [cart,setCart]=useState<any>();const [error,setError]=useState("");
- const load=async()=>{const id=localStorage.getItem("cartId")||"demo-cart";try{const r=await api.getCart(id);setCart(r.data)}catch(e){setError(e instanceof Error?e.message:"Unable to load bag")}};
+ const [cart,setCart]=useState<any>({items:[],subtotal:0});const [error,setError]=useState("");
+ const load=async()=>{const id=localStorage.getItem("cartId");if(!id){setCart({items:[],subtotal:0});return}try{const r=await api.getCart(id);setCart(r.data)}catch(e){setError(e instanceof Error?e.message:"Unable to load bag")}};
  useEffect(()=>{void load()},[]);
  const items=cart?.items||[];
- const remove=async(id:number)=>{try{setError("");await api.deleteCartItem(localStorage.getItem("cartId")||"demo-cart",id);await load()}catch(e){setError(e instanceof Error?e.message:"Unable to remove item")}};
- return <main className="container section narrow"><small>BAG / CURRENT SELECTION</small><h1>YOUR BAG</h1>{error&&<p className="error">{error}</p>}{!items.length?<div className="empty">YOUR BAG IS EMPTY <p><Link className="text-link" to="/products">EXPLORE COLLECTION <Icon type="arrow"/></Link></p></div>:<><div className="cart-list">{items.map((x:any)=><div className="cart-row" key={x.id}><div><b>{x.product_name||x.name||`PRODUCT #${x.product_id}`}</b><small>{[x.size,x.color].filter(Boolean).join(" · ")||"Standard"}</small><div className="quantity-control"><button aria-label="Decrease quantity" disabled={Number(x.quantity)<=1} onClick={async()=>{try{await api.updateCartItem(localStorage.getItem("cartId")||"demo-cart",x.id,Number(x.quantity)-1);await load()}catch(e){setError(e instanceof Error?e.message:"Unable to update quantity")}}}>−</button><span>QTY {x.quantity}</span><button aria-label="Increase quantity" onClick={async()=>{try{await api.updateCartItem(localStorage.getItem("cartId")||"demo-cart",x.id,Number(x.quantity)+1);await load()}catch(e){setError(e instanceof Error?e.message:"Unable to update quantity")}}}>+</button></div><button className="table-link" onClick={()=>void remove(x.id)}>REMOVE</button></div><strong>{money(Number(x.unit_price||x.price||0)*Number(x.quantity||1))}</strong></div>)}</div><div className="cart-total"><span>SUBTOTAL</span><b>{money(cart?.subtotal||items.reduce((s:number,x:any)=>s+Number(x.unit_price||x.price||0)*Number(x.quantity||1),0))}</b><p>{Number(cart?.subtotal||0)>=2000?"Free shipping":"Shipping ₹100 for orders under ₹2,000"}</p><Link className="add" to="/checkout">CONTINUE TO CHECKOUT <Icon type="arrow"/></Link></div></>}</main>;
+ const remove=async(id:number)=>{const cartId=localStorage.getItem("cartId");if(!cartId)return;try{setError("");await api.deleteCartItem(cartId,id);await load()}catch(e){setError(e instanceof Error?e.message:"Unable to remove item")}};
+ const change=async(itemId:number,quantity:number)=>{const cartId=localStorage.getItem("cartId");if(!cartId)return;try{setError("");await api.updateCartItem(cartId,itemId,quantity);await load()}catch(e){setError(e instanceof Error?e.message:"Unable to update quantity")}};
+ return <main className="container section narrow"><small>BAG / CURRENT SELECTION</small><h1>YOUR BAG</h1>{error&&<p className="error">{error}</p>}{!items.length?<div className="empty">YOUR BAG IS EMPTY <p><Link className="text-link" to="/products">EXPLORE COLLECTION <Icon type="arrow"/></Link></p></div>:<><div className="cart-list">{items.map((x:any)=><div className="cart-row" key={x.id}><div><b>{x.product_name||x.name||`PRODUCT #${x.product_id}`}</b><small>{[x.size,x.color].filter(Boolean).join(" · ")||"Standard"}</small><div className="quantity-control"><button aria-label="Decrease quantity" disabled={Number(x.quantity)<=1} onClick={()=>void change(x.id,Number(x.quantity)-1)}>−</button><span>QTY {x.quantity}</span><button aria-label="Increase quantity" onClick={()=>void change(x.id,Number(x.quantity)+1)}>+</button></div><button className="table-link" onClick={()=>void remove(x.id)}>REMOVE</button></div><strong>{money(Number(x.unit_price||x.price||0)*Number(x.quantity||1))}</strong></div>)}</div><div className="cart-total"><span>SUBTOTAL</span><b>{money(cart?.subtotal||items.reduce((s:number,x:any)=>s+Number(x.unit_price||x.price||0)*Number(x.quantity||1),0))}</b><p>{Number(cart?.subtotal||0)>=2000?"Free shipping":"Shipping ₹100 for orders under ₹2,000"}</p><Link className="add" to="/checkout">CONTINUE TO CHECKOUT <Icon type="arrow"/></Link></div></>}</main>;
+}
+
+function loadRazorpayScript():Promise<boolean>{
+ if((window as any).Razorpay)return Promise.resolve(true);
+ return new Promise(resolve=>{
+   const script=document.createElement("script");
+   script.src="https://checkout.razorpay.com/v1/checkout.js";
+   script.async=true;
+   script.onload=()=>resolve(true);
+   script.onerror=()=>resolve(false);
+   document.body.appendChild(script);
+ });
 }
 
 function Checkout(){
- const nav=useNavigate();const [f,setF]=useState({customerName:"",customerEmail:"",customerPhone:"",shippingAddress:""});const [error,setError]=useState("");const [cart,setCart]=useState<any>();
- useEffect(()=>{void api.getCart(localStorage.getItem("cartId")||"demo-cart").then(r=>setCart(r.data)).catch(()=>setCart({items:[]}))},[]);
+ const nav=useNavigate();
+ const [f,setF]=useState({customerName:"",customerEmail:"",customerPhone:"",shippingAddress:""});
+ const [error,setError]=useState("");const [cart,setCart]=useState<any>({items:[],subtotal:0});
+ const [paymentReady,setPaymentReady]=useState(false);const [checkingPayment,setCheckingPayment]=useState(true);const [loading,setLoading]=useState(false);
+ useEffect(()=>{
+   const id=localStorage.getItem("cartId");
+   if(id)void api.getCart(id).then(r=>setCart(r.data)).catch(e=>setError(e instanceof Error?e.message:"Unable to load bag"));
+   else setCart({items:[],subtotal:0});
+   void api.paymentStatus().then(r=>setPaymentReady(Boolean(r.data?.enabled))).catch(()=>setPaymentReady(false)).finally(()=>setCheckingPayment(false));
+ },[]);
  const items=cart?.items||[];
- const subtotal=Number(cart?.subtotal||items.reduce((s:number,x:any)=>s+Number(x.unit_price||x.price||0)*Number(x.quantity||1),0));const shipping=subtotal>=2000?0:100;
- const submit=async(e:FormEvent)=>{e.preventDefault();try{setError("");if(!items.length)throw Error("Your bag is empty. Add a product before checkout.");if(!/^\\S+@\\S+\\.\\S+$/.test(f.customerEmail))throw Error("Enter a valid email address.");if(f.customerPhone.replace(/\\D/g,"").length<10)throw Error("Enter a valid phone number.");const r=await api.createOrder({cartId:localStorage.getItem("cartId")||"demo-cart",...f});nav("/confirmation",{state:r.data})}catch(x){setError(x instanceof Error?x.message:"Checkout failed")}};
- return <main className="container section narrow"><small>CHECKOUT / DELIVERY</small><h1>DELIVERY DETAILS</h1>{!items.length?<div className="empty">YOUR BAG IS EMPTY <p><Link className="text-link" to="/products">RETURN TO COLLECTION</Link></p></div>:<><div className="admin-card"><div className="admin-card-head"><h2>Order summary</h2></div>{items.map((x:any)=><p key={x.id}>{x.product_name||x.name} · {x.size||"One size"} · Qty {x.quantity} <strong>{money(Number(x.unit_price||x.price||0)*Number(x.quantity||1))}</strong></p>)}<hr/><p>Subtotal <strong>{money(subtotal)}</strong></p><p>Shipping <strong>{shipping===0?"FREE":money(shipping)}</strong></p><h3>Total <strong>{money(subtotal+shipping)}</strong></h3></div><form className="form" onSubmit={submit}><label>FULL NAME<input required maxLength={150} value={f.customerName} onChange={e=>setF({...f,customerName:e.target.value})}/></label><label>EMAIL ADDRESS<input required type="email" maxLength={255} value={f.customerEmail} onChange={e=>setF({...f,customerEmail:e.target.value})}/></label><label>PHONE NUMBER<input required type="tel" maxLength={30} value={f.customerPhone} onChange={e=>setF({...f,customerPhone:e.target.value})}/></label><label>SHIPPING ADDRESS<textarea required maxLength={1000} value={f.shippingAddress} onChange={e=>setF({...f,shippingAddress:e.target.value})}/></label><button className="add">PLACE DEMO ORDER <Icon type="arrow"/></button></form><p className="muted">Demo checkout only. No payment is collected and no real order is sent to a fulfilment service.</p></>}{error&&<p className="error">{error}</p>}</main>;
+ const subtotal=Number(cart?.subtotal||items.reduce((s:number,x:any)=>s+Number(x.unit_price||x.price||0)*Number(x.quantity||1),0));
+ const shipping=subtotal>=2000?0:100;
+ const submit=async(e:FormEvent)=>{
+   e.preventDefault();
+   try{
+     setError("");
+     if(!items.length)throw Error("Your bag is empty. Add a product before checkout.");
+     if(!paymentReady)throw Error("Online payments are not configured yet. The store owner must finish payment setup before checkout can accept orders.");
+     if(!/^\S+@\S+\.\S+$/.test(f.customerEmail.trim()))throw Error("Enter a valid email address.");
+     if(f.customerPhone.replace(/\D/g,"").length<10)throw Error("Enter a valid phone number.");
+     setLoading(true);
+     const created=await api.createOrder({cartId:localStorage.getItem("cartId"),...f});
+     const order=created.data?.order;
+     if(!order?.id||!order?.order_number)throw Error("The server did not return a valid order.");
+     const payment=(await api.createPaymentOrder({orderId:order.id,orderNumber:order.order_number,customerEmail:f.customerEmail.trim()})).data;
+     const scriptLoaded=await loadRazorpayScript();
+     if(!scriptLoaded)throw Error("Unable to load the secure payment window. Please check your connection and try again.");
+     const Razorpay=(window as any).Razorpay;
+     const checkout=new Razorpay({
+       key:payment.keyId,
+       amount:payment.amount,
+       currency:payment.currency,
+       name:"Contemporary Essentials",
+       description:"Order "+order.order_number,
+       order_id:payment.razorpayOrderId,
+       prefill:{name:f.customerName,email:f.customerEmail,contact:f.customerPhone},
+       notes:{orderNumber:order.order_number},
+       theme:{color:"#171717"},
+       handler:async(response:any)=>{
+         try{
+           await api.verifyPayment({orderId:order.id,razorpayOrderId:response.razorpay_order_id,razorpayPaymentId:response.razorpay_payment_id,razorpaySignature:response.razorpay_signature});
+           nav("/confirmation",{state:{...order,orderNumber:order.order_number,orderStatus:"confirmed",paymentStatus:"paid",totalAmount:order.total_amount}});
+         }catch(err){setError(err instanceof Error?err.message:"Payment verification failed. Keep your payment details and contact the store.");}
+         finally{setLoading(false)}
+       },
+       modal:{ondismiss:()=>{setError("Payment was cancelled. You can try again while your 15-minute stock reservation remains active.");setLoading(false)}}
+     });
+     checkout.on("payment.failed",(response:any)=>{setError(response?.error?.description||"Payment failed. Please try again.");setLoading(false)});
+     checkout.open();
+   }catch(x){setError(x instanceof Error?x.message:"Checkout failed");setLoading(false)}
+ };
+ return <main className="container section narrow"><small>CHECKOUT / SECURE PAYMENT</small><h1>DELIVERY DETAILS</h1>{!items.length?<div className="empty">YOUR BAG IS EMPTY <p><Link className="text-link" to="/products">RETURN TO COLLECTION</Link></p></div>:<><div className="admin-card"><div className="admin-card-head"><h2>Order summary</h2></div>{items.map((x:any)=><p key={x.id}>{x.product_name||x.name} · {x.size||"One size"} · Qty {x.quantity} <strong>{money(Number(x.unit_price||x.price||0)*Number(x.quantity||1))}</strong></p>)}<hr/><p>Subtotal <strong>{money(subtotal)}</strong></p><p>Shipping <strong>{shipping===0?"FREE":money(shipping)}</strong></p><h3>Total <strong>{money(subtotal+shipping)}</strong></h3></div>{checkingPayment?<p className="muted">Checking secure payment availability…</p>:!paymentReady?<p className="error">Online payment is not configured yet. Checkout is temporarily unavailable until the store owner connects Razorpay.</p>:<form className="form" onSubmit={submit}><label>FULL NAME<input required maxLength={150} autoComplete="name" value={f.customerName} onChange={e=>setF({...f,customerName:e.target.value})}/></label><label>EMAIL ADDRESS<input required type="email" maxLength={255} autoComplete="email" value={f.customerEmail} onChange={e=>setF({...f,customerEmail:e.target.value})}/></label><label>PHONE NUMBER<input required type="tel" maxLength={30} autoComplete="tel" value={f.customerPhone} onChange={e=>setF({...f,customerPhone:e.target.value})}/></label><label>SHIPPING ADDRESS<textarea required maxLength={1000} autoComplete="street-address" value={f.shippingAddress} onChange={e=>setF({...f,shippingAddress:e.target.value})}/></label><button className="add" disabled={loading}>{loading?"CONNECTING TO PAYMENT…":"CONTINUE TO SECURE PAYMENT"} <Icon type="arrow"/></button></form>}</>}{error&&<p className="error">{error}</p>}</main>;
 }
 
-function Track(){const [n,setN]=useState(""),[e,setE]=useState(""),[r,setR]=useState<any>(),[err,setErr]=useState("");return <main className="container section narrow"><small>CLIENT SERVICE / ORDER STATUS</small><h1>TRACK ORDER</h1><form className="form" onSubmit={async x=>{x.preventDefault();try{setErr("");setR((await api.trackOrder(n.trim(),e.trim().toLowerCase())).data)}catch(z){setR(null);setErr(z instanceof Error?z.message:"Order not found")}}}><label>ORDER NUMBER<input required value={n} onChange={x=>setN(x.target.value)}/></label><label>EMAIL<input required type="email" value={e} onChange={x=>setE(x.target.value)}/></label><button className="add">TRACK ORDER <Icon type="arrow"/></button></form>{err&&<p className="error">{err}</p>}{r&&<div className="admin-card"><small>ORDER STATUS</small><h2>{r.orderNumber||r.order_number}</h2><p>Customer: {r.customerName||r.customer_name}</p><p>Status: <b>{r.orderStatus||r.order_status||"pending"}</b></p><p>Payment: {r.paymentStatus||r.payment_status||"pending"}</p><p>Total: <b>{money(r.totalAmount||r.total_amount||0)}</b></p><p>{(r.items||[]).length} item(s)</p></div>}</main>}
+function Track(){const [n,setN]=useState(""),[e,setE]=useState(""),[r,setR]=useState<any>(),[err,setErr]=useState("");return <main className="container section narrow"><small>CLIENT SERVICE / ORDER STATUS</small><h1>TRACK ORDER</h1><form className="form" onSubmit={async x=>{x.preventDefault();try{setErr("");setR((await api.trackOrder(n.trim(),e.trim().toLowerCase())).data.order)}catch(z){setR(null);setErr(z instanceof Error?z.message:"Order not found")}}}><label>ORDER NUMBER<input required value={n} onChange={x=>setN(x.target.value)}/></label><label>EMAIL<input required type="email" value={e} onChange={x=>setE(x.target.value)}/></label><button className="add">TRACK ORDER <Icon type="arrow"/></button></form>{err&&<p className="error">{err}</p>}{r&&<div className="admin-card"><small>ORDER STATUS</small><h2>{r.orderNumber||r.order_number}</h2><p>Customer: {r.customerName||r.customer_name}</p><p>Status: <b>{r.orderStatus||r.order_status||"pending"}</b></p><p>Payment: {r.paymentStatus||r.payment_status||"pending"}</p><p>Total: <b>{money(r.totalAmount||r.total_amount||0)}</b></p><p>{(r.items||[]).length} item(s)</p></div>}</main>}
 
-function Confirmation(){const location=useLocation();const order=(location.state||JSON.parse(localStorage.getItem("demoOrder")||"null")) as any;return <main className="container section confirmation"><small>ORDER / CONFIRMED</small><h1>THANK YOU.</h1><p>Your demo order has been created. No payment was collected.</p>{order&&<div className="admin-card"><h2>{order.orderNumber||order.order_number||"Order received"}</h2><p>Order total: <b>{money(order.totalAmount||order.total_amount||0)}</b></p><p>Status: {order.orderStatus||order.order_status||"pending"}</p><p>Keep your order number and email to try order tracking on this browser.</p><Link className="text-link" to="/track">TRACK THIS ORDER <Icon type="arrow"/></Link></div>}<Link className="text-link" to="/products">CONTINUE SHOPPING <Icon type="arrow"/></Link></main>}
+function Confirmation(){const location=useLocation();const order=(location.state||null) as any;return <main className="container section confirmation"><small>ORDER / PAYMENT CONFIRMED</small><h1>THANK YOU.</h1>{order?<><p>Your payment has been verified and your order is confirmed.</p><div className="admin-card"><h2>{order.orderNumber||order.order_number||"Order received"}</h2><p>Order total: <b>{money(order.totalAmount||order.total_amount||0)}</b></p><p>Status: {order.orderStatus||"confirmed"}</p><p>Payment: <b>{order.paymentStatus||"paid"}</b></p><p>Keep your order number and email to track your order.</p><Link className="text-link" to="/track">TRACK THIS ORDER <Icon type="arrow"/></Link></div></>:<p>Your order confirmation is not available in this browser session. Use your order number and email on the tracking page.</p>}<Link className="text-link" to="/products">CONTINUE SHOPPING <Icon type="arrow"/></Link></main>}
 
 function Admin(){return <AdminPanel/>;}
 
