@@ -10,7 +10,9 @@ const router = Router();
 
 router.post(
   "/create-order",
-  validateBody([{ field: "orderId", type: "number", required: true }]),
+  validateBody([{ field: "orderId", type: "number", required: true },
+    { field: "orderNumber", type: "string", required: true },
+    { field: "customerEmail", type: "string", required: true }]),
   createPaymentOrder
 );
 
