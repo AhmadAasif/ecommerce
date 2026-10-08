@@ -140,6 +140,10 @@ export const api = {
       return {success:true,data:saveDemoCart(cart)};
     }
   },
+  updateCartItem: async (c:string,i:number,q:number) => {
+    try { return await request<{success:boolean;data:any}>(`/cart/${c}/items/${i}`,{method:"PUT",body:JSON.stringify({quantity:q})}); }
+    catch { const cart=demoCart(); const item=cart.items.find((x:any)=>x.id===i); if(!item) throw new Error("Cart item not found"); item.quantity=q; return {success:true,data:saveDemoCart(cart)}; }
+  },
   deleteCartItem: async (c:string,i:number) => {
     try { return await request<{success:boolean;data:any}>(`/cart/${c}/items/${i}`,{method:"DELETE"}); }
     catch { const cart=demoCart(); cart.items=cart.items.filter((x:any)=>x.id!==i); return {success:true,data:saveDemoCart(cart)}; }
