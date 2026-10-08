@@ -4,18 +4,20 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const keyId = process.env.RAZORPAY_KEY_ID;
-const keySecret = process.env.RAZORPAY_KEY_SECRET;
+const keyId = process.env.RAZORPAY_KEY_ID || "";
+const keySecret = process.env.RAZORPAY_KEY_SECRET || "";
 const currency = process.env.RAZORPAY_CURRENCY || "INR";
 
-if (!keyId || !keySecret) {
-  throw new Error("RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET are required");
-}
+const razorpay = keyId && keySecret
+  ? new Razorpay({ key_id: keyId, key_secret: keySecret })
+  : null;
 
-const razorpay = new Razorpay({
-  key_id: keyId,
-  key_secret: keySecret
-});
+function requireRazorpay() {
+  if (!razorpay) {
+    throw new Error("RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET are required");
+  }
+  return razorpay;
+}
 
 export const createRazorpayOrder = async ({
   amount,
@@ -26,7 +28,7 @@ export const createRazorpayOrder = async ({
   receipt: string;
   notes?: Record<string, string>;
 }) => {
-  return razorpay.orders.create({
+  return requireRazorpay().orders.create({
     amount,
     currency,
     receipt,
@@ -39,11 +41,11 @@ export const getRazorpayPublicKey = () => keyId;
 export const getRazorpayCurrency = () => currency;
 
 export const fetchRazorpayOrder = async (orderId: string) => {
-  return razorpay.orders.fetch(orderId);
+  return requireRazorpay().orders.fetch(orderId);
 };
 
 export const fetchRazorpayPayment = async (paymentId: string) => {
-  return razorpay.payments.fetch(paymentId);
+  return requireRazorpay().payments.fetch(paymentId);
 };
 
 export const verifyRazorpayPaymentSignature = ({
@@ -55,6 +57,7 @@ export const verifyRazorpayPaymentSignature = ({
   paymentId: string;
   signature: string;
 }) => {
+  if (!keySecret) return false;
   const generatedSignature = crypto
     .createHmac("sha256", keySecret)
     .update(`${orderId}|${paymentId}`)
