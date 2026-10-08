@@ -77,9 +77,16 @@ app.use("/api/orders", orderRoutes);
 async function startServer() {
   await runMigrations();
 
-  // Payment routes are intentionally not mounted until payment is configured.
-  // The Razorpay implementation remains unchanged.
-  console.warn("Payment routes are disabled until Razorpay credentials are configured.");
+  if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+    const paymentRoutes = (await import("./routes/payment.routes.js")).default;
+    app.use("/api/payments", paymentRoutes);
+    console.log("Razorpay payment routes enabled.");
+  } else {
+    app.use("/api/payments", (_req, res) => {
+      res.status(503).json({ success: false, message: "Online payments are not configured yet." });
+    });
+    console.warn("Online payments are disabled until Razorpay credentials are configured.");
+  }
 
   app.use("/api/admin", adminOrderRoutes);
   app.use("/api/admin", adminInventoryRoutes);
