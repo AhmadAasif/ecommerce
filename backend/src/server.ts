@@ -1,4 +1,5 @@
 import express from "express";
+import { runMigrations } from "./utils/migrations.js";
 import cors from "cors";
 import dotenv from "dotenv";
 import helmet from "helmet";
@@ -27,21 +28,30 @@ const HOST = "0.0.0.0";
 app.set("trust proxy", 1);
 app.disable("x-powered-by");
 
-const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:3000")
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
   .split(",")
   .map((origin) => origin.trim().replace(/\/$/, ""))
   .filter(Boolean);
+
+function isAllowedOrigin(origin?: string) {
+  if (!origin) return true;
+  const normalized = origin.replace(/\/$/, "");
+  if (allowedOrigins.includes("*") || allowedOrigins.includes(normalized)) return true;
+  try {
+    const url = new URL(normalized);
+    return url.protocol === "https:" &&
+      (/^ecommerce-[a-z0-9-]+-kvnem\.vercel\.app$/i.test(url.hostname) ||
+       url.hostname === "ecommerce-cyan-eta-82.vercel.app");
+  } catch {
+    return false;
+  }
+}
 
 app.use(helmet());
 app.use(
   cors({
     origin: (origin, callback) => {
-      const normalizedOrigin = origin?.replace(/\/$/, "");
-      if (!origin || allowedOrigins.includes("*") || allowedOrigins.includes(normalizedOrigin || "")) {
-        callback(null, true);
-        return;
-      }
-      callback(new Error("Origin is not allowed by CORS"));
+      callback(null, isAllowedOrigin(origin));
     }
   })
 );
@@ -65,6 +75,8 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 
 async function startServer() {
+  await runMigrations();
+
   // Payment routes are intentionally not mounted until payment is configured.
   // The Razorpay implementation remains unchanged.
   console.warn("Payment routes are disabled until Razorpay credentials are configured.");
