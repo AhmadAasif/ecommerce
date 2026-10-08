@@ -1,7 +1,7 @@
 import { demoProducts, request, type AdminCategory, type AdminOrder, type AdminProduct, type InventoryItem } from "../api";
 const DEMO_TOKEN="demo-admin-token", PKEY="demoAdminProducts", CKEY="demoAdminCategories", OKEY="demoAdminOrders";
 const clone=<T,>(v:T):T=>JSON.parse(JSON.stringify(v));
-const isDemo=(t:string)=>t===DEMO_TOKEN;
+const isDemo=(t:string)=>!import.meta.env.PROD && t===DEMO_TOKEN;
 function products():AdminProduct[]{const s=localStorage.getItem(PKEY);if(s)return JSON.parse(s);const v=clone(demoProducts) as AdminProduct[];localStorage.setItem(PKEY,JSON.stringify(v));return v}
 function saveProducts(v:AdminProduct[]){localStorage.setItem(PKEY,JSON.stringify(v));return v}
 function categories():AdminCategory[]{const s=localStorage.getItem(CKEY);if(s)return JSON.parse(s);const v:AdminCategory[]=[{id:1,name:"Men"},{id:2,name:"Women"},{id:3,name:"New Arrivals"},{id:4,name:"Sale"}];localStorage.setItem(CKEY,JSON.stringify(v));return v}
@@ -10,7 +10,7 @@ function orders():AdminOrder[]{const s=localStorage.getItem(OKEY);if(s)return JS
 function saveOrders(v:AdminOrder[]){localStorage.setItem(OKEY,JSON.stringify(v));return v}
 export const adminApi={
   demoToken:DEMO_TOKEN,
-  login:async(email:string,password:string)=>{if(email==="testemail"&&password==="testpassword")return {success:true,data:{token:DEMO_TOKEN,admin:{name:"Client Demo Admin",email,role:"admin"}}};return request<any>("/auth/admin/login",{method:"POST",body:JSON.stringify({email,password})})},
+  login:async(email:string,password:string)=>{if(!import.meta.env.PROD&&email==="testemail"&&password==="testpassword")return {success:true,data:{token:DEMO_TOKEN,admin:{name:"Local Demo Admin",email,role:"admin"}}};return request<any>("/auth/admin/login",{method:"POST",body:JSON.stringify({email,password})})},
   products:async(t:string)=>isDemo(t)?{success:true,data:products()}:request<any>("/admin/products",{headers:{Authorization:"Bearer "+t}}),
   createProduct:async(t:string,b:any)=>{if(isDemo(t)){const id=Date.now(),c=categories().find(x=>x.id===b.categoryId),p:AdminProduct={id,name:b.name,description:b.description,price:b.price,discount:b.discount,brand:b.brand,status:b.status,category_id:b.categoryId,category_name:c?.name,images:[],variants:[]};saveProducts([p,...products()]);return{success:true,data:p}}return request("/admin/products",{method:"POST",headers:{Authorization:"Bearer "+t},body:JSON.stringify(b)})},
   updateProduct:async(t:string,id:number,b:any)=>{if(isDemo(t)){const a=products(),i=a.findIndex(x=>x.id===id);if(i<0)throw Error("Product not found");const c=categories().find(x=>x.id===b.categoryId);a[i]={...a[i],...b,category_name:c?.name};saveProducts(a);return{success:true,data:a[i]}}return request("/admin/products/"+id,{method:"PUT",headers:{Authorization:"Bearer "+t},body:JSON.stringify(b)})},
