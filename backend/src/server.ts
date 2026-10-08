@@ -65,14 +65,9 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 
 async function startServer() {
-  // Payment module remains untouched. Only load it when its credentials exist,
-  // so the rest of the shop can run while payment integration is not configured.
-  if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
-    const { default: paymentRoutes } = await import("./routes/payment.routes.js");
-    app.use("/api/payments", paymentRoutes);
-  } else {
-    console.warn("Payment routes are disabled until Razorpay credentials are configured.");
-  }
+  // Payment routes are intentionally not mounted until payment is configured.
+  // The Razorpay implementation remains unchanged.
+  console.warn("Payment routes are disabled until Razorpay credentials are configured.");
 
   app.use("/api/admin", adminOrderRoutes);
   app.use("/api/admin", adminInventoryRoutes);
