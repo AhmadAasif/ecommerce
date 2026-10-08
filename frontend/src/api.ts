@@ -87,8 +87,19 @@ export const api = {
     try { return await request<{success:boolean;data:Product[]}>(`/products${q?`?${q}`:""}`); }
     catch {
       const p=new URLSearchParams(q);
-      let data=[...demoProducts];
+      const savedAdminProducts=JSON.parse(localStorage.getItem("demoAdminProducts")||"[]") as Product[];
+      const savedById=new Map(savedAdminProducts.map(x=>[x.id,x]));
+      const dataBase=[...savedAdminProducts,...demoProducts.filter(x=>!savedById.has(x.id))];
+      let data=dataBase.filter(x=>x.status!=="archived");
       const search=(p.get("search")||"").toLowerCase(), cat=p.get("category")||"", sort=p.get("sort")||"newest";
+      const gender=(p.get("gender")||"").toLowerCase();
+      const minPrice=Number(p.get("minPrice")||0), maxPrice=Number(p.get("maxPrice")||Number.POSITIVE_INFINITY);
+      const size=(p.get("size")||"").toLowerCase(), color=(p.get("color")||"").toLowerCase();
+      if(gender) data=data.filter(x=>String(x.gender||"").toLowerCase()===gender);
+      if(size) data=data.filter(x=>x.variants?.some(v=>String(v.size||"").toLowerCase()===size));
+      if(color) data=data.filter(x=>x.variants?.some(v=>String(v.color||"").toLowerCase()===color));
+      if(minPrice) data=data.filter(x=>Number(x.price)>=minPrice);
+      if(Number.isFinite(maxPrice)) data=data.filter(x=>Number(x.price)<=maxPrice);
       if(search) data=data.filter(x=>x.name.toLowerCase().includes(search)||x.description?.toLowerCase().includes(search));
       if(cat) data=data.filter(x=>String(x.gender||"").trim().toLowerCase()===cat.trim().toLowerCase() || String(x.category_name||"").trim().toLowerCase()===cat.trim().toLowerCase());
       if(sort==="price_low") data.sort((a,b)=>Number(a.price)-Number(b.price));
@@ -101,7 +112,8 @@ export const api = {
   getProduct: async (id:number) => {
     try { return await request<{success:boolean;data:Product}>(`/products/${id}`); }
     catch {
-      const p=demoProducts.find(x=>x.id===id);
+      const savedAdminProducts=JSON.parse(localStorage.getItem("demoAdminProducts")||"[]") as Product[];
+      const p=[...savedAdminProducts,...demoProducts].find(x=>x.id===id&&x.status!=="archived");
       if(!p) throw new Error("Product not found");
       return {success:true,data:p};
     }
