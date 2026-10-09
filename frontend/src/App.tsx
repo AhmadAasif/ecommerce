@@ -3,6 +3,7 @@ import type {FormEvent} from "react";
 import {Link,Route,Routes,useLocation,useNavigate,useParams,useSearchParams} from "react-router-dom";
 import {api,Product} from "./api";
 import AdminPanel from "./admin/AdminPanel";
+import AdminSetup from "./admin/AdminSetup";
 
 const money=(v:number|string)=>`₹${Number(v||0).toLocaleString("en-IN")}`;
 const Icon=({type}:{type:"search"|"bag"|"user"|"arrow"})=>{
@@ -208,4 +209,4 @@ function Admin(){return <AdminPanel/>;}
 
 function Footer(){return <footer><div className="container footer-grid"><div><span className="brand">DEMONSTATION</span><p>Contemporary essentials. Designed with restraint.</p></div><div><small>SHOP</small><Link to="/products">Collection</Link><Link to="/track">Track Order</Link></div><div><small>SERVICE</small><span>Shipping & Delivery</span><span>Returns</span><span>Client Care</span></div></div><div className="container copyright">© {new Date().getFullYear()} DEMONSTATION / E-COMMERCE</div></footer>}
 
-export default function App(){const location=useLocation();const [count,setCount]=useState(0);const refresh=async()=>{const id=localStorage.getItem("cartId");if(!id)return setCount(0);try{const r=await api.getCart(id);setCount((r.data?.items||[]).reduce((s:number,x:any)=>s+Number(x.quantity||0),0))}catch{setCount(0)}};useEffect(()=>{void refresh()},[]);return <><Header count={count}/><Routes><Route path="/" element={<Home/>}/><Route path="/products" element={<Products/>}/><Route path="/products/:id" element={<ProductPage refresh={refresh}/>}/><Route path="/cart" element={<Cart/>}/><Route path="/checkout" element={<Checkout/>}/><Route path="/track" element={<Track/>}/><Route path="/admin" element={<Admin/>}/><Route path="/confirmation" element={<Confirmation/>}/></Routes><Footer/></>}
+export default function App(){const location=useLocation();const [count,setCount]=useState(0);const refresh=async()=>{const id=localStorage.getItem("cartId");if(!id)return setCount(0);try{const r=await api.getCart(id);setCount((r.data?.items||[]).reduce((s:number,x:any)=>s+Number(x.quantity||0),0))}catch{setCount(0)}};useEffect(()=>{void refresh()},[]);return <><Header count={count}/><Routes><Route path="/" element={<Home/>}/><Route path="/products" element={<Products/>}/><Route path="/products/:id" element={<ProductPage refresh={refresh}/>}/><Route path="/cart" element={<Cart/>}/><Route path="/checkout" element={<Checkout/>}/><Route path="/track" element={<Track/>}/><Route path="/admin" element={<Admin/>}/><Route path="/admin/setup" element={<AdminSetup/>}/><Route path="/confirmation" element={<Confirmation/>}/></Routes><Footer/></>}
