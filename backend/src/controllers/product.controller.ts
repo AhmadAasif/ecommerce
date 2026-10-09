@@ -23,26 +23,26 @@ export const getProducts = async (req: Request, res: Response) => {
     if (search) {
       values.push(`%${search}%`);
       conditions.push(`(
-        p.name ILIKE $1 OR p.description ILIKE $1 OR p.brand ILIKE $1
-        OR c.name ILIKE $1 OR EXISTS (
+        p.name ILIKE $${values.length} OR p.description ILIKE $${values.length} OR p.brand ILIKE $${values.length}
+        OR c.name ILIKE $${values.length} OR EXISTS (
           SELECT 1 FROM product_variants sv
           WHERE sv.product_id = p.id
-          AND (sv.sku ILIKE $1 OR sv.color ILIKE $1 OR sv.size ILIKE $1)
+          AND (sv.sku ILIKE $${values.length} OR sv.color ILIKE $${values.length} OR sv.size ILIKE $${values.length})
         )
       )`);
     }
 
     if (genderRaw === "men" || genderRaw === "women") {
       values.push(genderRaw);
-      conditions.push(`LOWER(p.gender) = ${values.length}`);
+      conditions.push(`LOWER(p.gender) = $${values.length}`);
     }
 
     if (Number.isInteger(category) && category > 0) {
       values.push(category);
-      conditions.push(`p.category_id = ${values.length}`);
+      conditions.push(`p.category_id = $${values.length}`);
     } else if (categoryRaw) {
       values.push(categoryRaw);
-      conditions.push(`LOWER(c.name) = LOWER(${values.length})`);
+      conditions.push(`LOWER(c.name) = LOWER($${values.length})`);
     }
 
     if (Number.isFinite(minPrice) && minPrice >= 0) {
@@ -152,7 +152,7 @@ export const getProductById = async (req: Request, res: Response) => {
       SELECT p.id, p.name, p.description, p.price, p.discount, p.brand, p.status,
              p.gender, p.category_id, c.name AS category_name
       FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN categories c ON c.id = p.category_id
       WHERE p.id = $1 AND p.status = 'active'
     `, [id]);
 
