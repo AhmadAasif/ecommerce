@@ -26,6 +26,7 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
       customerPhone,
       shippingAddress
     } = req.body;
+    const customerId = req.user?.role === "customer" ? req.user.id : null;
 
     if (
       !cartId ||
