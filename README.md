@@ -274,24 +274,37 @@ For the real client deployment, payment and storage accounts should belong to th
 
 ## Customer Email Notifications
 
-The backend uses Resend to send customer emails. Email sending is tied to server-side order events:
+The backend sends customer emails through the Gmail account explicitly connected by an administrator in the admin panel.
 
+Email sending is tied to server-side order events:
 - Payment successfully verified or captured: payment confirmation with order number and amount.
 - Admin changes an order's delivery status: status update with a link to order tracking.
 - Payment failure: cancellation/status update when the order is marked cancelled.
 
-Email delivery is optional until Resend is configured. If `RESEND_API_KEY` or `EMAIL_FROM` is missing, the API continues working and records that the email was skipped. Email provider failures are logged and do not undo a successful payment or order-status update.
+Open the admin panel's **Settings** tab and choose **Connect Gmail**. Google displays its own authorization screen; the administrator must authorize KVNEM to send mail. To change the sender, connect the new Gmail account there. Changing the admin login email alone does not grant Gmail sending permission.
+
+The backend stores Gmail OAuth tokens encrypted in PostgreSQL. Gmail passwords are never requested or stored, and credentials must never be placed in frontend variables or committed to GitHub. If no Gmail account is connected, or an email provider request fails, order/payment processing continues and the email failure is logged.
 
 Configure these variables in Render for the backend (and in local `backend/.env` for development):
 
 ```env
-RESEND_API_KEY=your_resend_api_key
-EMAIL_FROM=KVNEM <orders@your-verified-domain.com>
+GOOGLE_CLIENT_ID=your_google_oauth_client_id
+GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
+GOOGLE_REDIRECT_URI=https://YOUR-RENDER-SERVICE.onrender.com/api/admin/email/gmail/callback
+EMAIL_TOKEN_ENCRYPTION_KEY=your_32_byte_key_as_64_hex_characters
 FRONTEND_URL=https://ecommerce-kvnem.vercel.app
 STORE_NAME=KVNEM
 ```
 
-Before production sending, verify the sender/domain in Resend. Keep `RESEND_API_KEY` secret in Render and local environment files; never expose it in frontend `VITE_*` variables or commit a real key to GitHub. The sender address must use a domain or sender that Resend allows for your account. Use the exact deployed storefront URL for `FRONTEND_URL` so tracking links point to the live site.
+For local development, set `GOOGLE_REDIRECT_URI=http://localhost:5000/api/admin/email/gmail/callback` and add that exact URI to the Google OAuth client's authorized redirect URIs. Create a Google Cloud OAuth client for a **Web application**, enable the Gmail API, and configure the OAuth consent screen/test users as required. The deployed callback URI must match the value registered in Google Cloud exactly. External apps left in Google's Testing publishing status can have refresh-token limitations; complete Google's publishing/verification requirements before relying on it for production customers.
+
+Generate a 32-byte encryption key locally (do not send it in chat or commit it):
+
+```powershell
+node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
+```
+
+Keep the Google client secret and encryption key only in local environment files or Render environment settings. Use the exact deployed storefront URL for `FRONTEND_URL` so tracking links point to the live site.
 
 ## Local Backend Setup
 
