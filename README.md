@@ -272,6 +272,27 @@ RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
 
 For the real client deployment, payment and storage accounts should belong to the client/business where possible. Production secrets are added to Render, not GitHub.
 
+## Customer Email Notifications
+
+The backend uses Resend to send customer emails. Email sending is tied to server-side order events:
+
+- Payment successfully verified or captured: payment confirmation with order number and amount.
+- Admin changes an order's delivery status: status update with a link to order tracking.
+- Payment failure: cancellation/status update when the order is marked cancelled.
+
+Email delivery is optional until Resend is configured. If `RESEND_API_KEY` or `EMAIL_FROM` is missing, the API continues working and records that the email was skipped. Email provider failures are logged and do not undo a successful payment or order-status update.
+
+Configure these variables in Render for the backend (and in local `backend/.env` for development):
+
+```env
+RESEND_API_KEY=your_resend_api_key
+EMAIL_FROM=KVNEM <orders@your-verified-domain.com>
+FRONTEND_URL=https://ecommerce-kvnem.vercel.app
+STORE_NAME=KVNEM
+```
+
+Before production sending, verify the sender/domain in Resend. Keep `RESEND_API_KEY` secret in Render and local environment files; never expose it in frontend `VITE_*` variables or commit a real key to GitHub. The sender address must use a domain or sender that Resend allows for your account. Use the exact deployed storefront URL for `FRONTEND_URL` so tracking links point to the live site.
+
 ## Local Backend Setup
 
 From the project root:
