@@ -40,8 +40,8 @@ services:
       - key: RESEND_API_KEY
         sync: false
       - key: EMAIL_FROM
-        sync: false
+        value: Ecommerce <admin@example.com>
       - key: FRONTEND_URL
         sync: false
       - key: STORE_NAME
-        value: KVNEM
+        value: Ecommerce
