@@ -29,6 +29,7 @@
     "pg": "^8.16.3",
     "razorpay": "^2.9.8",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "googleapis": "^166.0.0"
   }
 }
