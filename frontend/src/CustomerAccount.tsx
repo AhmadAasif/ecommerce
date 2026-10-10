@@ -34,6 +34,7 @@ export default function CustomerAccount() {
     localStorage.setItem(TOKEN_KEY, data.token);
     localStorage.setItem(CUSTOMER_KEY, JSON.stringify(data.customer));
     setCustomer(data.customer);
+    window.dispatchEvent(new Event("customer-session-changed"));
     setError("");
   };
   const loadOrders = async () => {
@@ -86,13 +87,14 @@ export default function CustomerAccount() {
   const logout = () => {
     localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(CUSTOMER_KEY);
     setCustomer(null); setOrders([]); setError("");
+    window.dispatchEvent(new Event("customer-session-changed"));
   };
 
   return <main className="container section narrow">
     <small>CLIENT SERVICE / YOUR ACCOUNT</small><h1>{customer ? "WELCOME BACK." : "YOUR ACCOUNT."}</h1>
     {customer ? <>
       <div className="admin-card"><small>ACCOUNT DETAILS</small><h2>{customer.name}</h2><p>{customer.email}</p><button className="text-link" type="button" onClick={logout}>SIGN OUT</button></div>
-      <div className="section-head"><div><small>ORDER HISTORY</small><h2>YOUR ORDERS</h2></div></div>
+      <div className="section-head" id="orders"><div><small>ORDER HISTORY</small><h2>YOUR ORDERS</h2></div></div>
       {orders.length ? orders.map((order: any) => <article className="admin-card" key={order.id}>
         <small>{order.order_number}</small><h3>{String(order.order_status).toUpperCase()}</h3>
         <p>Placed {new Date(order.created_at).toLocaleDateString()} · Payment: {order.payment_status}</p>
