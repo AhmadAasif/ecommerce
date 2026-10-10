@@ -1,11 +1,13 @@
 import { Router } from "express";
 import { createOrder, trackOrder } from "../controllers/order.controller.js";
 import { validateBody } from "../middleware/validation.middleware.js";
+import { optionalCustomerAuth } from "../middleware/optional-customer-auth.middleware.js";
 
 const router = Router();
 
 router.post(
   "/",
+  optionalCustomerAuth,
   validateBody([
     { field: "cartId", type: "string", required: true },
     { field: "customerName", type: "string", required: true, minLength: 2 },

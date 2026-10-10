@@ -1,12 +1,13 @@
 import { Request, Response } from "express";
 import pool from "../config/database.js";
+import { AuthRequest } from "../middleware/auth.middleware.js";
 
 const ORDER_RESERVATION_MINUTES = 15;
 
 const generateOrderNumber = () =>
   `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
-export const createOrder = async (req: Request, res: Response) => {
+export const createOrder = async (req: AuthRequest, res: Response) => {
   if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
     res.status(503).json({
       success: false,
@@ -133,6 +134,7 @@ export const createOrder = async (req: Request, res: Response) => {
     const orderResult = await client.query(
       `INSERT INTO orders (
          order_number,
+         user_id,
          customer_name,
          customer_email,
          customer_phone,
@@ -144,7 +146,7 @@ export const createOrder = async (req: Request, res: Response) => {
          payment_status,
          order_status
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 0, $8, 'pending', 'pending')
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, $9, 'pending', 'pending')
        RETURNING
          id,
          order_number,
@@ -161,6 +163,7 @@ export const createOrder = async (req: Request, res: Response) => {
          created_at`,
       [
         orderNumber,
+        customerId,
         customerName,
         customerEmail,
         customerPhone,
@@ -172,6 +175,7 @@ export const createOrder = async (req: Request, res: Response) => {
     );
 
     const order = orderResult.rows[0];
+    await client.query("INSERT INTO order_status_history (order_id, status, note) VALUES ($1, $2, $3)", [order.id, "pending", "Order created"]);
 
     for (const item of cartResult.rows) {
       await client.query(
@@ -300,19 +304,10 @@ export const trackOrder = async (req: Request, res: Response) => {
     const order = orderResult.rows[0];
 
     const itemsResult = await pool.query(
-      `SELECT
-         product_name,
-         sku,
-         size,
-         color,
-         quantity,
-         unit_price,
-         total_price
-       FROM order_items
-       WHERE order_id = $1
-       ORDER BY id ASC`,
-      [order.id]
-    );
+      `SELECT product_name, sku, size, color, quantity, unit_price, total_price
+       FROM order_items WHERE order_id = $1 ORDER BY id ASC`, [order.id]);
+    const historyResult = await pool.query(
+      "SELECT status, note, created_at FROM order_status_history WHERE order_id = $1 ORDER BY created_at ASC, id ASC", [order.id]);
 
     res.json({
       success: true,
@@ -328,7 +323,8 @@ export const trackOrder = async (req: Request, res: Response) => {
           orderStatus: order.order_status,
           createdAt: order.created_at,
           updatedAt: order.updated_at,
-          items: itemsResult.rows
+          items: itemsResult.rows,
+          statusHistory: historyResult.rows
         }
       }
     });
