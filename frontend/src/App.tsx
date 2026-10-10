@@ -1,4 +1,4 @@
-import {useEffect,useState} from "react";
+import {useEffect,useRef,useState} from "react";
 import type {FormEvent} from "react";
 import {Link,Route,Routes,useLocation,useNavigate,useParams,useSearchParams} from "react-router-dom";
 import {api,Product} from "./api";
@@ -16,8 +16,23 @@ const Icon=({type}:{type:"search"|"bag"|"user"|"arrow"})=>{
 };
 
 function Header({count}:{count:number}){
- const [q,setQ]=useState("");const nav=useNavigate();
- return <header className="site-header"><div className="container header-main"><Link to="/" className="brand">DEMONSTATION</Link><div className="header-tools"><form className="search" onSubmit={e=>{e.preventDefault();if(q.trim())nav(`/products?search=${encodeURIComponent(q)}`)}}><Icon type="search"/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="SEARCH"/></form><Link to="/cart" className="tool"><Icon type="bag"/><span>BAG ({count})</span></Link></div></div><nav className="container ribbon"><Link to="/products">COLLECTIONS</Link><Link to="/products?gender=men">MEN</Link><Link to="/products?gender=women">WOMEN</Link><Link to="/products?sort=newest">NEW ARRIVALS</Link><Link to="/products?sort=discount">SALE</Link><Link to="/track">ORDER TRACKING</Link><Link to="/account">MY ACCOUNT</Link></nav></header>;
+ const [q,setQ]=useState("");
+ const [customer,setCustomer]=useState<{name:string;email:string}|null>(()=>{try{return JSON.parse(localStorage.getItem("customerAccount")||"null")}catch{return null}});
+ const [menuOpen,setMenuOpen]=useState(false);
+ const nav=useNavigate();
+ const profileRef=useRef<HTMLDivElement>(null);
+ useEffect(()=>{
+   const syncCustomer=()=>{try{setCustomer(JSON.parse(localStorage.getItem("customerAccount")||"null"))}catch{setCustomer(null)}};
+   const closeOutside=(event:MouseEvent)=>{if(profileRef.current&&!profileRef.current.contains(event.target as Node))setMenuOpen(false)};
+   const closeEscape=(event:KeyboardEvent)=>{if(event.key==="Escape")setMenuOpen(false)};
+   window.addEventListener("customer-session-changed",syncCustomer);
+   window.addEventListener("storage",syncCustomer);
+   document.addEventListener("mousedown",closeOutside);
+   document.addEventListener("keydown",closeEscape);
+   return ()=>{window.removeEventListener("customer-session-changed",syncCustomer);window.removeEventListener("storage",syncCustomer);document.removeEventListener("mousedown",closeOutside);document.removeEventListener("keydown",closeEscape)};
+ },[]);
+ const signOut=()=>{localStorage.removeItem("customerToken");localStorage.removeItem("customerAccount");window.dispatchEvent(new Event("customer-session-changed"));setMenuOpen(false);nav("/")};
+ return <header className="site-header"><div className="container header-main"><Link to="/" className="brand">DEMONSTATION</Link><div className="header-tools"><form className="search" onSubmit={e=>{e.preventDefault();if(q.trim())nav(`/products?search=${encodeURIComponent(q)}`)}}><Icon type="search"/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="SEARCH"/></form><Link to="/cart" className="tool"><Icon type="bag"/><span>BAG ({count})</span></Link><div className="profile-menu" ref={profileRef}><button className="profile-trigger" type="button" aria-label={customer? `Account menu for ${customer.name}`:"Open account menu"} aria-expanded={menuOpen} onClick={()=>setMenuOpen(open=>!open)}>{customer&&<span className="profile-greeting">Hello, {customer.name.split(" ")[0]}</span>}<span className="profile-avatar"><Icon type="user"/></span></button>{menuOpen&&<div className="profile-dropdown" role="menu">{customer?<><div className="profile-dropdown-heading"><small>SIGNED IN AS</small><strong>{customer.name}</strong><span>{customer.email}</span></div><Link role="menuitem" to="/account" onClick={()=>setMenuOpen(false)}>My Account</Link><Link role="menuitem" to="/account#orders" onClick={()=>setMenuOpen(false)}>My Orders</Link><Link role="menuitem" to="/track" onClick={()=>setMenuOpen(false)}>Track Order</Link><button role="menuitem" type="button" onClick={signOut}>Sign Out</button></>:<><Link role="menuitem" to="/account" onClick={()=>setMenuOpen(false)}>Sign In / My Account</Link><Link role="menuitem" to="/track" onClick={()=>setMenuOpen(false)}>Track Order</Link></>}</div>}</div></div></div><nav className="container ribbon"><Link to="/products">COLLECTIONS</Link><Link to="/products?gender=men">MEN</Link><Link to="/products?gender=women">WOMEN</Link><Link to="/products?sort=newest">NEW ARRIVALS</Link><Link to="/products?sort=discount">SALE</Link><Link to="/track">ORDER TRACKING</Link></nav></header>;
 }
 
 function Card({p,index}:{p:Product,index:number}){
