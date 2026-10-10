@@ -24,3 +24,45 @@ export async function sendOrderStatusEmail(input: { email: string; name: string;
 function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char] || char));
 }
+
+
+export async function sendPaymentConfirmationEmail(input: {
+  email: string;
+  name: string;
+  orderNumber: string;
+  totalAmount: number | string;
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM;
+  if (!apiKey || !from) {
+    console.info("Payment confirmation email skipped: RESEND_API_KEY or EMAIL_FROM is not configured.");
+    return;
+  }
+
+  const store = process.env.STORE_NAME || "Our Store";
+  const frontend = (process.env.FRONTEND_URL || "").replace(/\/$/, "");
+  const tracking = frontend ? frontend + "/track" : "";
+  const amount = Number(input.totalAmount);
+  const formattedAmount = Number.isFinite(amount)
+    ? new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(amount)
+    : String(input.totalAmount);
+  const html = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#171717"><h2>${escapeHtml(store)}</h2><p>Hello ${escapeHtml(input.name)},</p><p>We've received your payment for order <strong>${escapeHtml(input.orderNumber)}</strong>.</p><p><strong>Amount paid:</strong> ${escapeHtml(formattedAmount)}</p><p>Your order is now confirmed. We'll email you again when its status changes.</p>${tracking ? `<p><a href="${escapeHtml(tracking)}">Track your order</a> using your order number and checkout email.</p>` : ""}<p>Thank you for shopping with us.</p></div>`;
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from,
+        to: [input.email],
+        subject: `Payment received for order ${input.orderNumber}`,
+        html
+      })
+    });
+    if (!response.ok) {
+      console.error("Payment confirmation email provider returned", response.status, await response.text().catch(() => ""));
+    }
+  } catch (error) {
+    console.error("Payment confirmation email failed:", error);
+  }
+}
