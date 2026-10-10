@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import pool from "../config/database.js";
+import { sendOrderStatusEmail } from "../utils/order-notifications.js";
 
 const ALLOWED_ORDER_STATUSES = [
   "pending",
@@ -213,7 +214,7 @@ export const updateAdminOrderStatus = async (req: Request, res: Response) => {
     await client.query("BEGIN");
 
     const orderResult = await client.query(
-      `SELECT id, order_status, payment_status
+      `SELECT id, order_number, customer_name, customer_email, order_status, payment_status
        FROM orders
        WHERE id = $1
        FOR UPDATE`,
@@ -331,12 +332,13 @@ export const updateAdminOrderStatus = async (req: Request, res: Response) => {
       );
     }
 
+    await client.query(
+      "INSERT INTO order_status_history (order_id, status, note) VALUES ($1, $2, $3)",
+      [orderId, status, "Order status updated by the store"]
+    );
     await client.query("COMMIT");
-
-    res.json({
-      success: true,
-      message: `Order status updated to ${status}`
-    });
+    void sendOrderStatusEmail({ email: currentOrder.customer_email, name: currentOrder.customer_name, orderNumber: currentOrder.order_number, status });
+    res.json({ success: true, message: `Order status updated to ${status}` });
   } catch (error) {
     await client.query("ROLLBACK");
     console.error("Update admin order status error:", error);

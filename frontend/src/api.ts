@@ -171,7 +171,7 @@ export const api = {
       if (import.meta.env.PROD) throw error; const cart=demoCart(); cart.items=cart.items.filter((x:any)=>x.id!==i); return {success:true,data:saveDemoCart(cart)}; }
   },
   createOrder: async (b:any) => {
-    try { return await request<{success:boolean;data:any}>("/orders",{method:"POST",body:JSON.stringify(b)}); }
+    try { return await request<{success:boolean;data:any}>("/orders",{method:"POST",headers:localStorage.getItem("customerToken")?{Authorization:`Bearer ${localStorage.getItem("customerToken")}`}:{},body:JSON.stringify(b)}); }
     catch (error) {
       if (import.meta.env.PROD) throw error;
       const cart=demoCart();

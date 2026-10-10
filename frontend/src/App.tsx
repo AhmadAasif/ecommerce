@@ -4,6 +4,7 @@ import {Link,Route,Routes,useLocation,useNavigate,useParams,useSearchParams} fro
 import {api,Product} from "./api";
 import AdminPanel from "./admin/AdminPanel";
 import AdminSetup from "./admin/AdminSetup";
+import CustomerAccount from "./CustomerAccount";
 
 const money=(v:number|string)=>`₹${Number(v||0).toLocaleString("en-IN")}`;
 const Icon=({type}:{type:"search"|"bag"|"user"|"arrow"})=>{
@@ -16,7 +17,7 @@ const Icon=({type}:{type:"search"|"bag"|"user"|"arrow"})=>{
 
 function Header({count}:{count:number}){
  const [q,setQ]=useState("");const nav=useNavigate();
- return <header className="site-header"><div className="container header-main"><Link to="/" className="brand">DEMONSTATION</Link><div className="header-tools"><form className="search" onSubmit={e=>{e.preventDefault();if(q.trim())nav(`/products?search=${encodeURIComponent(q)}`)}}><Icon type="search"/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="SEARCH"/></form><Link to="/cart" className="tool"><Icon type="bag"/><span>BAG ({count})</span></Link></div></div><nav className="container ribbon"><Link to="/products">COLLECTIONS</Link><Link to="/products?gender=men">MEN</Link><Link to="/products?gender=women">WOMEN</Link><Link to="/products?sort=newest">NEW ARRIVALS</Link><Link to="/products?sort=discount">SALE</Link><Link to="/track">ORDER TRACKING</Link></nav></header>;
+ return <header className="site-header"><div className="container header-main"><Link to="/" className="brand">DEMONSTATION</Link><div className="header-tools"><form className="search" onSubmit={e=>{e.preventDefault();if(q.trim())nav(`/products?search=${encodeURIComponent(q)}`)}}><Icon type="search"/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="SEARCH"/></form><Link to="/cart" className="tool"><Icon type="bag"/><span>BAG ({count})</span></Link></div></div><nav className="container ribbon"><Link to="/products">COLLECTIONS</Link><Link to="/products?gender=men">MEN</Link><Link to="/products?gender=women">WOMEN</Link><Link to="/products?sort=newest">NEW ARRIVALS</Link><Link to="/products?sort=discount">SALE</Link><Link to="/track">ORDER TRACKING</Link><Link to="/account">MY ACCOUNT</Link></nav></header>;
 }
 
 function Card({p,index}:{p:Product,index:number}){
@@ -209,4 +210,4 @@ function Admin(){return <AdminPanel/>;}
 
 function Footer(){return <footer><div className="container footer-grid"><div><span className="brand">DEMONSTATION</span><p>Contemporary essentials. Designed with restraint.</p></div><div><small>SHOP</small><Link to="/products">Collection</Link><Link to="/track">Track Order</Link></div><div><small>SERVICE</small><span>Shipping & Delivery</span><span>Returns</span><span>Client Care</span></div></div><div className="container copyright">© {new Date().getFullYear()} DEMONSTATION / E-COMMERCE</div></footer>}
 
-export default function App(){const location=useLocation();const [count,setCount]=useState(0);const refresh=async()=>{const id=localStorage.getItem("cartId");if(!id)return setCount(0);try{const r=await api.getCart(id);setCount((r.data?.items||[]).reduce((s:number,x:any)=>s+Number(x.quantity||0),0))}catch{setCount(0)}};useEffect(()=>{void refresh()},[]);return <><Header count={count}/><Routes><Route path="/" element={<Home/>}/><Route path="/products" element={<Products/>}/><Route path="/products/:id" element={<ProductPage refresh={refresh}/>}/><Route path="/cart" element={<Cart/>}/><Route path="/checkout" element={<Checkout/>}/><Route path="/track" element={<Track/>}/><Route path="/admin" element={<Admin/>}/><Route path="/admin/setup" element={<AdminSetup/>}/><Route path="/confirmation" element={<Confirmation/>}/></Routes><Footer/></>}
+export default function App(){const location=useLocation();const [count,setCount]=useState(0);const refresh=async()=>{const id=localStorage.getItem("cartId");if(!id)return setCount(0);try{const r=await api.getCart(id);setCount((r.data?.items||[]).reduce((s:number,x:any)=>s+Number(x.quantity||0),0))}catch{setCount(0)}};useEffect(()=>{void refresh()},[]);return <><Header count={count}/><Routes><Route path="/" element={<Home/>}/><Route path="/products" element={<Products/>}/><Route path="/products/:id" element={<ProductPage refresh={refresh}/>}/><Route path="/cart" element={<Cart/>}/><Route path="/checkout" element={<Checkout/>}/><Route path="/track" element={<Track/>}/><Route path="/account" element={<CustomerAccount/>}/><Route path="/admin" element={<Admin/>}/><Route path="/admin/setup" element={<AdminSetup/>}/><Route path="/confirmation" element={<Confirmation/>}/></Routes><Footer/></>}
