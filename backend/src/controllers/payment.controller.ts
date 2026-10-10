@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import pool from "../config/database.js";
+import { sendPaymentConfirmationEmail, sendOrderStatusEmail } from "../utils/order-notifications.js";
 import {
   createRazorpayOrder,
   getRazorpayCurrency,
@@ -248,7 +249,9 @@ export const verifyPayment = async (req: Request, res: Response) => {
          total_amount,
          payment_status,
          order_status,
-         payment_order_id
+         payment_order_id,
+         customer_name,
+         customer_email
        FROM orders
        WHERE id = $1
        FOR UPDATE`,
@@ -397,7 +400,19 @@ export const verifyPayment = async (req: Request, res: Response) => {
       [razorpayPaymentId, order.id]
     );
 
+    await client.query(
+      "INSERT INTO order_status_history (order_id, status, note) VALUES ($1, $2, $3)",
+      [order.id, "confirmed", "Payment verified successfully"]
+    );
+
     await client.query("COMMIT");
+
+    void sendPaymentConfirmationEmail({
+      email: order.customer_email,
+      name: order.customer_name,
+      orderNumber: order.order_number,
+      totalAmount: order.total_amount
+    });
 
     res.json({
       success: true,
@@ -490,7 +505,9 @@ export const handlePaymentWebhook = async (req: Request, res: Response) => {
              total_amount,
              payment_status,
              payment_order_id,
-             order_status
+             order_status,
+             customer_name,
+             customer_email
            FROM orders
            WHERE payment_order_id = $1
            FOR UPDATE`,
@@ -615,7 +632,19 @@ export const handlePaymentWebhook = async (req: Request, res: Response) => {
           [payment.id, order.id]
         );
 
+        await client.query(
+          "INSERT INTO order_status_history (order_id, status, note) VALUES ($1, $2, $3)",
+          [order.id, "confirmed", "Payment captured by payment provider"]
+        );
+
         await client.query("COMMIT");
+
+        void sendPaymentConfirmationEmail({
+          email: order.customer_email,
+          name: order.customer_name,
+          orderNumber: order.order_number,
+          totalAmount: order.total_amount
+        });
 
         res.status(200).json({
           success: true,
@@ -642,7 +671,7 @@ export const handlePaymentWebhook = async (req: Request, res: Response) => {
       [payment.order_id]
     );
 
-    await pool.query(
+    const failedOrderResult = await pool.query(
       `UPDATE orders
        SET payment_status = 'failed',
            order_status = 'cancelled',
@@ -650,9 +679,23 @@ export const handlePaymentWebhook = async (req: Request, res: Response) => {
            payment_provider = 'razorpay',
            updated_at = CURRENT_TIMESTAMP
        WHERE payment_order_id = $2
-         AND payment_status = 'pending'`,
+         AND payment_status = 'pending'
+       RETURNING id, order_number, customer_name, customer_email`,
       [payment.id, payment.order_id]
     );
+
+    for (const failedOrder of failedOrderResult.rows) {
+      await pool.query(
+        "INSERT INTO order_status_history (order_id, status, note) VALUES ($1, $2, $3)",
+        [failedOrder.id, "cancelled", "Payment failed"]
+      );
+      void sendOrderStatusEmail({
+        email: failedOrder.customer_email,
+        name: failedOrder.customer_name,
+        orderNumber: failedOrder.order_number,
+        status: "cancelled"
+      });
+    }
 
     res.status(200).json({
       success: true,
