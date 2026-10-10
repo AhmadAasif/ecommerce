@@ -96,9 +96,12 @@ export async function saveGmailConnection(input: {
   }
 
   const existing = await pool.query(
-    "SELECT refresh_token_encrypted FROM store_email_connection WHERE id = 1"
+    "SELECT email, refresh_token_encrypted FROM store_email_connection WHERE id = 1"
   );
-  const previousRefreshToken = existing.rows[0]?.refresh_token_encrypted as string | undefined;
+  // Reuse a refresh token only when reconnecting the same Google account.
+  const previousRefreshToken = existing.rows[0]?.email === email
+    ? existing.rows[0]?.refresh_token_encrypted as string | undefined
+    : undefined;
   const refreshToken = tokens.refresh_token
     ? encrypt(tokens.refresh_token)
     : previousRefreshToken ?? null;
@@ -152,7 +155,7 @@ export async function sendGmailMessage(input: {
   html: string;
 }) {
   const result = await pool.query(
-    "SELECT email, access_token_encrypted, refresh_token_encrypted FROM store_email_connection WHERE id = 1"
+    "SELECT email, access_token_encrypted, refresh_token_encrypted, token_expiry FROM store_email_connection WHERE id = 1"
   );
   const connection = result.rows[0];
   if (!connection) {
@@ -163,7 +166,8 @@ export async function sendGmailMessage(input: {
   const oauth = getOAuthClient();
   oauth.setCredentials({
     access_token: decrypt(connection.access_token_encrypted as string),
-    refresh_token: decrypt(connection.refresh_token_encrypted as string)
+    refresh_token: decrypt(connection.refresh_token_encrypted as string),
+    expiry_date: connection.token_expiry ? new Date(connection.token_expiry as string).getTime() : undefined
   });
   const gmail = google.gmail({ version: "v1", auth: oauth });
 
