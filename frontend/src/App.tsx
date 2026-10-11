@@ -120,7 +120,7 @@ function ProductPage({refresh}:{refresh:()=>void}){
  };
 
  return <main className="container section detail">
-   <div className="detail-image">{img&&<img src={img} alt={p.name}/>}</div>
+   <div className="detail-image">{img&&<img src={img} alt={p.name} loading="lazy" decoding="async"/>}</div>
    <div className="detail-copy">
      <small>{p.brand||"COLLECTION"} / PRODUCT {p.id}</small>
      <h1>{p.name}</h1>
