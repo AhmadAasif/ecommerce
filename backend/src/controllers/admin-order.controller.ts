@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import pool from "../config/database.js";
-import { sendOrderStatusEmail } from "../utils/order-notifications.js";
+import { sendOrderStatusEmail, sendRefundConfirmationEmail } from "../utils/order-notifications.js";
+import { createRazorpayRefund } from "../services/payment.service.js";
 
 const ALLOWED_ORDER_STATUSES = [
   "pending",
@@ -347,6 +348,83 @@ export const updateAdminOrderStatus = async (req: Request, res: Response) => {
       success: false,
       message: "Failed to update order status"
     });
+  } finally {
+    client.release();
+  }
+};
+
+export const refundAdminOrder = async (req: Request, res: Response) => {
+  const orderId = Number(req.params.id);
+  if (!Number.isInteger(orderId) || orderId <= 0) {
+    res.status(400).json({ success: false, message: "Invalid order ID" });
+    return;
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await client.query(
+      `SELECT id, order_number, customer_name, customer_email, total_amount,
+              payment_status, payment_id, refund_id, refund_status
+       FROM orders WHERE id = $1 FOR UPDATE`,
+      [orderId]
+    );
+    if (!result.rows.length) {
+      await client.query("ROLLBACK");
+      res.status(404).json({ success: false, message: "Order not found" });
+      return;
+    }
+    const order = result.rows[0];
+    if (order.refund_id) {
+      await client.query("COMMIT");
+      res.status(409).json({ success: false, message: "A refund has already been initiated for this order", data: { refundId: order.refund_id, refundStatus: order.refund_status } });
+      return;
+    }
+    if (order.payment_status !== "paid" || !order.payment_id) {
+      await client.query("ROLLBACK");
+      res.status(400).json({ success: false, message: "Only paid orders with a payment reference can be refunded" });
+      return;
+    }
+
+    // Razorpay expects the amount in the smallest currency unit (paise for INR).
+    const amountInMinorUnits = Math.round(Number(order.total_amount) * 100);
+    if (!Number.isSafeInteger(amountInMinorUnits) || amountInMinorUnits <= 0) {
+      await client.query("ROLLBACK");
+      res.status(400).json({ success: false, message: "Invalid order amount for refund" });
+      return;
+    }
+
+    // Do not hold a database transaction open during the external payment API call.
+    await client.query("COMMIT");
+    const refund = await createRazorpayRefund(order.payment_id, amountInMinorUnits, order.order_number);
+    const refundStatus = String(refund.status || "pending");
+    await pool.query(
+      `UPDATE orders SET refund_id = $1, refund_status = $2,
+          refunded_at = CASE WHEN $2 = 'processed' THEN CURRENT_TIMESTAMP ELSE refunded_at END,
+          payment_status = CASE WHEN $2 = 'processed' THEN 'refunded' ELSE payment_status END,
+          updated_at = CURRENT_TIMESTAMP
+       WHERE id = $3 AND refund_id IS NULL`,
+      [refund.id, refundStatus, order.id]
+    );
+
+    if (refundStatus === "processed" || refundStatus === "pending") {
+      void sendRefundConfirmationEmail({
+        email: order.customer_email,
+        name: order.customer_name,
+        orderNumber: order.order_number,
+        refundAmount: Number(refund.amount) / 100,
+        refundId: refund.id
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message: "Refund request sent to Razorpay",
+      data: { refundId: refund.id, refundStatus, amount: Number(refund.amount) / 100 }
+    });
+  } catch (error) {
+    try { await client.query("ROLLBACK"); } catch { /* transaction may already be committed */ }
+    console.error("Refund admin order error:", error);
+    res.status(500).json({ success: false, message: "Failed to initiate refund. Check Razorpay dashboard before retrying." });
   } finally {
     client.release();
   }
