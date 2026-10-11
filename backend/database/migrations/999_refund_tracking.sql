@@ -1,0 +1,6 @@
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS refund_id TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS refund_status TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMPTZ;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_refund_id
+  ON orders (refund_id)
+  WHERE refund_id IS NOT NULL;
