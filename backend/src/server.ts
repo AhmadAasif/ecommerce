@@ -43,6 +43,8 @@ function isAllowedOrigin(origin?: string) {
     const url = new URL(normalized);
     return url.protocol === "https:" &&
       (
+        url.hostname === "pnkshop.vercel.app" ||
+        /^pnkshop-[a-z0-9-]+\.vercel\.app$/i.test(url.hostname) ||
         url.hostname === "ecommerce-kvnem.vercel.app" ||
         /^ecommerce-[a-z0-9-]+-kvnem\.vercel\.app$/i.test(url.hostname) ||
         url.hostname === "ecommerce-cyan-eta-82.vercel.app"
