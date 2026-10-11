@@ -171,7 +171,7 @@ export async function sendGmailMessage(input: {
   });
   const gmail = google.gmail({ version: "v1", auth: oauth });
 
-  const from = (process.env.STORE_NAME || "ecommerce").trim() || "ecommerce";
+  const from = (process.env.STORE_NAME || "PNKSHOP").trim() || "ecommerce";
   const encodedSubject = `=?UTF-8?B?${Buffer.from(input.subject, "utf8").toString("base64")}?=`;
   const message = [
     `From: ${from.replace(/[\r\n"]/g, "")} <${connection.email}>`,
