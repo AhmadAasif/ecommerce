@@ -290,13 +290,13 @@ Configure these variables in Render for the backend (and in local `backend/.env`
 ```env
 GOOGLE_CLIENT_ID=your_google_oauth_client_id
 GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
-GOOGLE_REDIRECT_URI=https://YOUR-RENDER-SERVICE.onrender.com/api/admin/email/gmail/callback
+GOOGLE_REDIRECT_URI=https://YOUR-RENDER-SERVICE.onrender.com/api/admin/email/callback
 EMAIL_TOKEN_ENCRYPTION_KEY=your_32_byte_key_as_64_hex_characters
 FRONTEND_URL=https://ecommerce-kvnem.vercel.app
 STORE_NAME=KVNEM
 ```
 
-For local development, set `GOOGLE_REDIRECT_URI=http://localhost:5000/api/admin/email/gmail/callback` and add that exact URI to the Google OAuth client's authorized redirect URIs. Create a Google Cloud OAuth client for a **Web application**, enable the Gmail API, and configure the OAuth consent screen/test users as required. The deployed callback URI must match the value registered in Google Cloud exactly. External apps left in Google's Testing publishing status can have refresh-token limitations; complete Google's publishing/verification requirements before relying on it for production customers.
+For local development, set `GOOGLE_REDIRECT_URI=http://localhost:5000/api/admin/email/callback` and add that exact URI to the Google OAuth client's authorized redirect URIs. Create a Google Cloud OAuth client for a **Web application**, enable the Gmail API, and configure the OAuth consent screen/test users as required. The deployed callback URI must match the value registered in Google Cloud exactly. External apps left in Google's Testing publishing status can have refresh-token limitations; complete Google's publishing/verification requirements before relying on it for production customers.
 
 Generate a 32-byte encryption key locally (do not send it in chat or commit it):
 
