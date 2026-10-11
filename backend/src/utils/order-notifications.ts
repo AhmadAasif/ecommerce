@@ -6,7 +6,7 @@ export async function sendOrderStatusEmail(input: {
   orderNumber: string;
   status: string;
 }) {
-  const store = process.env.STORE_NAME || "KVNEM";
+  const store = process.env.STORE_NAME || "PNKSHOP";
   const frontend = (process.env.FRONTEND_URL || "").replace(/\/$/, "");
   const tracking = frontend ? frontend + "/track" : "";
   const statusText = input.status.charAt(0).toUpperCase() + input.status.slice(1);
