@@ -107,7 +107,7 @@ export const getProducts = async (req: Request, res: Response) => {
          p.id, p.name, p.description, p.price, p.discount, p.brand, p.status,
          p.gender, p.category_id, c.name AS category_name,
          COALESCE(json_agg(DISTINCT jsonb_build_object(
-           'id', pi.id, 'imageUrl', pi.image_url, 'isPrimary', pi.is_primary
+           'id', pi.id, 'image_url', pi.image_url, 'is_primary', pi.is_primary
          )) FILTER (WHERE pi.id IS NOT NULL), '[]') AS images,
          COALESCE(json_agg(DISTINCT jsonb_build_object(
            'id', pv.id, 'sku', pv.sku, 'size', pv.size, 'color', pv.color,
