@@ -11,7 +11,7 @@ import {
 const router = Router();
 
 // Google redirects here after consent; signed OAuth state validates the request.
-router.get("/email/gmail/callback", finishGmailConnection);
+router.get("/email/callback", finishGmailConnection);
 
 router.use(authenticateToken, requireAdmin);
 router.get("/email/status", getAdminEmailStatus);
