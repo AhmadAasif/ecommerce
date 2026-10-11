@@ -11,6 +11,7 @@ import categoryRoutes from "./routes/category.routes.js";
 import productRoutes from "./routes/product.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
+import adminEmailRoutes from "./routes/admin-email.routes.js";
 import adminProductRoutes from "./routes/admin-product.routes.js";
 import adminVariantRoutes from "./routes/admin-variant.routes.js";
 import adminImageRoutes from "./routes/admin-image.routes.js";
@@ -68,6 +69,7 @@ app.get("/api/health/live", (_req, res) => {
 app.use("/api/categories", categoryRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminEmailRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/products", adminProductRoutes);
 app.use("/api/admin", adminVariantRoutes);

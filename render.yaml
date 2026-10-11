@@ -37,3 +37,15 @@ services:
         value: INR
       - key: RAZORPAY_WEBHOOK_SECRET
         sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: EMAIL_TOKEN_ENCRYPTION_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: STORE_NAME
+        value: KVNEM

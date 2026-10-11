@@ -10,6 +10,9 @@ function orders():AdminOrder[]{const s=localStorage.getItem(OKEY);if(s)return JS
 function saveOrders(v:AdminOrder[]){localStorage.setItem(OKEY,JSON.stringify(v));return v}
 export const adminApi={
   demoToken:DEMO_TOKEN,
+  gmailStatus:async(t:string)=>request<any>("/admin/email/status",{headers:{Authorization:"Bearer "+t}}),
+  startGmailConnect:async(t:string)=>request<any>("/admin/email/gmail/connect",{headers:{Authorization:"Bearer "+t}}),
+  disconnectGmail:async(t:string)=>request<any>("/admin/email/gmail",{method:"DELETE",headers:{Authorization:"Bearer "+t}}),
   login:async(email:string,password:string)=>{if(!import.meta.env.PROD&&email==="testemail"&&password==="testpassword")return {success:true,data:{token:DEMO_TOKEN,admin:{name:"Local Demo Admin",email,role:"admin"}}};return request<any>("/auth/admin/login",{method:"POST",body:JSON.stringify({email,password})})},
   products:async(t:string)=>isDemo(t)?{success:true,data:products()}:request<any>("/admin/products",{headers:{Authorization:"Bearer "+t}}),
   createProduct:async(t:string,b:any)=>{if(isDemo(t)){const id=Date.now(),c=categories().find(x=>x.id===b.categoryId),p:AdminProduct={id,name:b.name,description:b.description,price:b.price,discount:b.discount,brand:b.brand,status:b.status,category_id:b.categoryId,category_name:c?.name,images:[],variants:[]};saveProducts([p,...products()]);return{success:true,data:p}}return request("/admin/products",{method:"POST",headers:{Authorization:"Bearer "+t},body:JSON.stringify(b)})},
