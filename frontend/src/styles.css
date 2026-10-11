@@ -89,3 +89,13 @@
 .category-new{background:linear-gradient(135deg,#777b77,#343734)}
 .offer-badge{position:absolute;top:10px;right:10px;z-index:2;background:#171717;color:#fff;padding:8px 10px;font:9px "DM Mono",monospace;letter-spacing:.12em}.offers-section{background:#f9f9f7;border-top:1px solid var(--line)}.offers-section .product-image{position:relative}
 .offer-badge{position:absolute;top:10px;right:10px;z-index:2;background:#171717;color:#fff;padding:8px 10px;font:9px "DM Mono",monospace;letter-spacing:.12em}.offers-section{background:#f9f9f7;border-top:1px solid var(--line)}.offers-section .product-image{position:relative}
+
+
+/* Small storefront polish: keyboard access, reduced motion and clearer offer labels */
+:focus-visible{outline:2px solid currentColor;outline-offset:4px}
+.offer-badge{font-size:8px;letter-spacing:.1em}
+.product-image img{background:#e6e7e4}
+.category-tile:focus-visible,.product-card:focus-visible,.ribbon a:focus-visible{outline-color:#111;outline-offset:4px}
+@media(hover:none){.product-card:hover img{transform:none}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+@media(max-width:560px){.hero{min-height:520px;height:calc(82svh - 60px)}.hero-copy p{max-width:300px;font-size:13px}.hero-foot{width:calc(100% - 28px)}.section-head{gap:16px}.section-head h1,.section-head h2{font-size:clamp(30px,9vw,46px)}.filters button,.filters select{flex-shrink:0}.detail{gap:24px}.detail-copy h1{font-size:clamp(40px,12vw,58px)}}
