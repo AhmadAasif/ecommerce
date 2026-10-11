@@ -48,6 +48,13 @@ export const fetchRazorpayPayment = async (paymentId: string) => {
   return requireRazorpay().payments.fetch(paymentId);
 };
 
+export const createRazorpayRefund = async (paymentId: string, amount: number, orderNumber: string) => {
+  return requireRazorpay().payments.refund(paymentId, {
+    amount,
+    notes: { orderNumber, reason: "Refund requested by store admin" }
+  });
+};
+
 export const verifyRazorpayPaymentSignature = ({
   orderId,
   paymentId,

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import pool from "../config/database.js";
 import { AuthRequest } from "../middleware/auth.middleware.js";
+import { sendNewOrderAdminEmail } from "../utils/order-notifications.js";
 
 const ORDER_RESERVATION_MINUTES = 15;
 
@@ -235,6 +236,13 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
     );
 
     await client.query("COMMIT");
+
+    void sendNewOrderAdminEmail({
+      orderNumber: order.order_number,
+      customerName: order.customer_name,
+      customerEmail: order.customer_email,
+      totalAmount: order.total_amount
+    });
 
     res.status(201).json({
       success: true,
