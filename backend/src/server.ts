@@ -42,8 +42,11 @@ function isAllowedOrigin(origin?: string) {
   try {
     const url = new URL(normalized);
     return url.protocol === "https:" &&
-      (/^ecommerce-[a-z0-9-]+-kvnem\.vercel\.app$/i.test(url.hostname) ||
-       url.hostname === "ecommerce-cyan-eta-82.vercel.app");
+      (
+        url.hostname === "ecommerce-kvnem.vercel.app" ||
+        /^ecommerce-[a-z0-9-]+-kvnem\.vercel\.app$/i.test(url.hostname) ||
+        url.hostname === "ecommerce-cyan-eta-82.vercel.app"
+      );
   } catch {
     return false;
   }
